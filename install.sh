@@ -7,7 +7,7 @@ echo "🚀 正在安装 VPS Toolkit..."
 # 创建目录
 INSTALL_DIR="/opt/vps_toolkit"
 BIN_PATH="/usr/local/bin/tool"
-SCRIPT_URL="https://raw.githubusercontent.com/zeyu8023/vps-toolkit/main/vps_master.sh"
+SCRIPT_URL="https://raw.githubusercontent.com/zeyu8023/vps_toolkit/main/vps_master.sh"
 
 # 创建安装目录
 mkdir -p "$INSTALL_DIR"
