@@ -8,8 +8,14 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
-cp "$0" /usr/local/bin/tool || echo "⚠️ 无法创建快捷命令"
-chmod +x /usr/local/bin/tool 2>/dev/null
+# 尝试创建 /usr/local/bin/tool 快捷命令
+if [[ ! -f /usr/local/bin/tool ]]; then
+  if [[ -f "$0" && -x "$0" ]]; then
+    cp "$0" /usr/local/bin/tool 2>/dev/null && chmod +x /usr/local/bin/tool
+  elif [[ -f /opt/vps_master.sh ]]; then
+    cp /opt/vps_master.sh /usr/local/bin/tool && chmod +x /usr/local/bin/tool
+  fi
+fi
 
 log() {
   echo -e "\033[36m[$(date '+%F %T')]\033[0m $1" | tee -a "$LOG_FILE"
