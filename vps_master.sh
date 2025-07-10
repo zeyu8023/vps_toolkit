@@ -135,8 +135,17 @@ install_docker_tools() {
     [1]="docker.io"
     [2]="docker-compose"
   )
+
+  # 清空上一次的选择记录
+  to_install=""
+
   prompt_and_install "Docker 环境" map
-  systemctl enable docker && systemctl start docker
+
+  # 仅当用户选择了 docker.io 时才启动服务
+  if [[ "$to_install" == *"docker.io"* ]]; then
+    echo -e "\n🔧 正在启动并设置 Docker 开机自启..."
+    systemctl enable docker && systemctl start docker
+  fi
 }
 
 prompt_and_install() {
