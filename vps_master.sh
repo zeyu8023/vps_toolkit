@@ -8,7 +8,8 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
-ln -sf "$(realpath "$0")" /usr/local/bin/tool 2>/dev/null
+cp "$0" /usr/local/bin/tool 2>/dev/null || echo "⚠️ 无法创建快捷命令"
+chmod +x /usr/local/bin/tool 2>/dev/null
 
 log() {
   echo -e "\033[36m[$(date '+%F %T')]\033[0m $1" | tee -a "$LOG_FILE"
