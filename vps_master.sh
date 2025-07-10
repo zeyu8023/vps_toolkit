@@ -145,9 +145,34 @@ prompt_and_install() {
 
   echo -e "\n🧩 $title 安装菜单：请选择要安装的组件（用空格分隔）"
   echo "--------------------------------------------"
+
+  # 检测包管理器
+  local pkg_mgr=""
+  if command -v apt >/dev/null; then
+    pkg_mgr="apt"
+  elif command -v yum >/dev/null; then
+    pkg_mgr="yum"
+  else
+    echo "❌ 不支持的包管理器"
+    return
+  fi
+
+  # 显示菜单并检测安装状态
   for i in "${!options[@]}"; do
-    echo " $i) ${options[$i]}"
+    local pkg="${options[$i]}"
+    local status=""
+
+    if command -v "$pkg" >/dev/null 2>&1; then
+      status="\033[1;32m✅（已安装）\033[0m"
+    elif [[ "$pkg_mgr" == "apt" ]] && dpkg -l | grep -qw "$pkg"; then
+      status="\033[1;32m✅（已安装）\033[0m"
+    elif [[ "$pkg_mgr" == "yum" ]] && rpm -q "$pkg" >/dev/null 2>&1; then
+      status="\033[1;32m✅（已安装）\033[0m"
+    fi
+
+    echo -e " $i) $pkg $status"
   done
+
   echo " 0) 返回上一级"
   echo "--------------------------------------------"
   read -p "👉 请输入编号（如 1 3 5）: " choices
@@ -165,13 +190,10 @@ prompt_and_install() {
   fi
 
   echo -e "\n📦 正在安装：$to_install"
-  if command -v apt >/dev/null; then
+  if [[ "$pkg_mgr" == "apt" ]]; then
     apt update && apt install -y $to_install
-  elif command -v yum >/dev/null; then
+  elif [[ "$pkg_mgr" == "yum" ]]; then
     yum install -y $to_install
-  else
-    echo "❌ 不支持的包管理器"
-    return
   fi
 
   echo "✅ 安装完成！"
