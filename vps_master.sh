@@ -8,7 +8,7 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
-cp "$0" /usr/local/bin/tool 2>/dev/null || echo "⚠️ 无法创建快捷命令"
+cp "$0" /usr/local/bin/tool || echo "⚠️ 无法创建快捷命令"
 chmod +x /usr/local/bin/tool 2>/dev/null
 
 log() {
