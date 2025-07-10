@@ -4,17 +4,17 @@ set -e
 
 echo "🚀 正在安装 VPS Toolkit..."
 
-# 创建目录
+# 安装路径
 INSTALL_DIR="/opt/vps_toolkit"
 BIN_PATH="/usr/local/bin/tool"
 SCRIPT_URL="https://raw.githubusercontent.com/zeyu8023/vps_toolkit/main/vps_master.sh"
 
-# 创建安装目录
+# 创建目录
 mkdir -p "$INSTALL_DIR"
 
-# 下载脚本
+# 下载主脚本
 echo "📥 正在下载脚本到 $INSTALL_DIR..."
-curl -sSL "$SCRIPT_URL" -o "$INSTALL_DIR/vps_master.sh"
+curl -fsSL "$SCRIPT_URL" -o "$INSTALL_DIR/vps_master.sh"
 
 # 设置权限
 chmod +x "$INSTALL_DIR/vps_master.sh"
@@ -25,6 +25,7 @@ ln -sf "$INSTALL_DIR/vps_master.sh" "$BIN_PATH"
 chmod +x "$BIN_PATH"
 
 # 完成提示
+echo ""
 echo "✅ 安装完成！你现在可以直接输入以下命令启动工具："
 echo ""
 echo "   tool"
