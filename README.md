@@ -23,21 +23,19 @@
 
 ---
 
-## 🚀 一键运行命令
-
-无需克隆仓库，直接运行：
+## 🚀 一键安装命令
 
 ```bash
-bash <(curl -sSL https://raw.githubusercontent.com/zeyu8023/vps_toolkit/main/vps_master.sh)
+bash <(curl -sSL https://raw.githubusercontent.com/zeyu8023/vps_toolkit/main/install.sh)
 ```
 
-运行后你可以直接输入：
+安装完成后，你可以直接运行：
 
 ```bash
 tool
 ```
 
-快速再次打开工具面板。
+即可打开 VPS 管理面板。
 
 ---
 
