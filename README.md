@@ -28,7 +28,7 @@
 无需克隆仓库，直接运行：
 
 ```bash
-bash <(curl -sSL https://raw.githubusercontent.com/zeyu8023/vps-toolkit/main/vps_master.sh)
+bash <(curl -sSL https://raw.githubusercontent.com/zeyu8023/vps_toolkit/main/vps_master.sh)
 ```
 
 运行后你可以直接输入：
