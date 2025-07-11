@@ -6,8 +6,16 @@ docker_management_center() {
     echo -e "\n🐳 Docker 容器管理中心："
     echo "--------------------------------------------"
 
-    # 获取所有容器并过滤掉无名或无镜像的
-    containers=($(docker ps -a --format "{{.ID}}|{{.Names}}|{{.Image}}|{{.Status}}" | grep -v '| |'))
+    containers=()
+    while IFS='|' read -r cid name image status; do
+      # 修复空容器名：尝试用容器 ID 作为名称
+      if [[ -z "$name" ]]; then
+        name="unnamed-$cid"
+      fi
+      if [[ -n "$image" ]]; then
+        containers+=("$cid|$name|$image|$status")
+      fi
+    done < <(docker ps -a --format "{{.ID}}|{{.Names}}|{{.Image}}|{{.Status}}")
 
     if [[ ${#containers[@]} -eq 0 ]]; then
       echo "⚠️ 当前没有有效容器"
@@ -26,7 +34,6 @@ docker_management_center() {
       continue
     fi
 
-    # 显示有效容器列表
     for i in "${!containers[@]}"; do
       IFS='|' read -r cid name image status <<< "${containers[$i]}"
       echo "$i) $name  —  $image  —  $status"
@@ -51,22 +58,22 @@ docker_management_center() {
     echo " 1) 启动容器"
     echo " 2) 停止容器"
     echo " 3) 卸载容器"
-    echo " 4) 更新容器（拉取镜像 + 重启）"
+    echo " 4) 更新容器（自动识别 compose）"
     echo " 5) 查看容器日志"
     echo " 0) 返回容器列表"
     read -p "👉 请输入操作编号: " action
 
     case $action in
       1)
-        docker start "$name" && echo "✅ 容器 $name 已启动" || echo "❌ 启动失败"
+        docker start "$cid" && echo "✅ 容器 $name 已启动" || echo "❌ 启动失败"
         ;;
       2)
-        docker stop "$name" && echo "🚫 容器 $name 已停止" || echo "❌ 停止失败"
+        docker stop "$cid" && echo "🚫 容器 $name 已停止" || echo "❌ 停止失败"
         ;;
       3)
         read -p "⚠️ 确认要删除容器 $name？(y/N): " confirm
         if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
-          docker rm -f "$name" && echo "✅ 容器 $name 已删除" || echo "❌ 删除失败"
+          docker rm -f "$cid" && echo "✅ 容器 $name 已删除" || echo "❌ 删除失败"
           log "删除容器：$name"
         else
           echo "🚫 已取消删除"
@@ -75,16 +82,42 @@ docker_management_center() {
       4)
         echo "📦 正在拉取最新镜像：$image"
         docker pull "$image"
-        echo "🛑 停止并删除旧容器..."
-        docker stop "$name" && docker rm "$name"
-        echo "🚀 使用原镜像重新启动容器..."
-        docker run -d --name "$name" "$image"
-        echo "✅ 容器 $name 已更新并重启"
-        log "更新容器：$name 使用镜像 $image"
+
+        echo "🔍 检查是否为 docker-compose 管理容器..."
+        compose_project=$(docker inspect "$cid" --format '{{ index .Config.Labels "com.docker.compose.project" }}')
+
+        if [[ -n "$compose_project" ]]; then
+          echo "📦 检测到 docker-compose 管理容器 [$compose_project]"
+          compose_dir="/opt/compose/$compose_project"
+
+          if [[ -f "$compose_dir/docker-compose.yml" ]]; then
+            echo "📁 切换到 compose 目录：$compose_dir"
+            cd "$compose_dir"
+            docker-compose pull
+            docker-compose up -d
+            echo "✅ 已通过 docker-compose 更新容器 [$name]"
+            log "更新容器（compose）：$name 使用镜像 $image"
+          else
+            echo "❌ 未找到 docker-compose.yml，请检查路径：$compose_dir"
+          fi
+        else
+          echo "🛑 停止并删除旧容器..."
+          docker stop "$cid" && docker rm "$cid"
+
+          echo "🔍 正在提取原容器配置..."
+          envs=$(docker inspect "$cid" --format '{{range .Config.Env}}-e {{.}} {{end}}')
+          vols=$(docker inspect "$cid" --format '{{range .HostConfig.Binds}}-v {{.}} {{end}}')
+          ports=$(docker inspect "$cid" --format '{{range $p, $conf := .HostConfig.PortBindings}}-p {{$conf[0].HostPort}}:{{$p}} {{end}}')
+
+          echo "🚀 使用原配置重新启动容器..."
+          docker run -d --name "$name" $envs $vols $ports "$image"
+          echo "✅ 容器 $name 已更新并重启"
+          log "更新容器：$name 使用镜像 $image（保留原配置）"
+        fi
         ;;
       5)
         echo -e "\n📜 容器 $name 的最近日志："
-        docker logs --tail 50 "$name"
+        docker logs --tail 50 "$cid"
         ;;
       0) continue ;;
       *) echo "❌ 无效操作编号" ;;
