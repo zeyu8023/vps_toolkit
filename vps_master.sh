@@ -223,7 +223,8 @@ while true; do
     2)
      echo -e "\n📋 高内存占用进程（前 15 个）："
      echo "--------------------------------------------"
-     ps aux --sort=-%mem | head -n 15
+     ps -eo pid,comm,rss --sort=-rss | awk 'NR==1{printf "%-4s %-8s %-25s %-10s\n", "No.", "PID", "COMMAND", "MEM(MiB)"; next}
+     {printf "%-4d %-8d %-25s %-10.2f\n", NR-1, $1, $2, $3/1024}' | head -n 16
      echo "--------------------------------------------"
      read -p "👉 输入要终止的 PID（留空跳过）: " pid
      if [[ -n "$pid" ]]; then
