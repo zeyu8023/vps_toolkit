@@ -5,20 +5,44 @@ docker_management_center() {
   while true; do
     echo -e "\n🐳 Docker 容器管理中心："
     echo "--------------------------------------------"
-    containers=($(docker ps -a --format "{{.ID}}|{{.Names}}|{{.Image}}|{{.Status}}"))
+
+    # 获取所有容器并过滤掉无名或无镜像的
+    containers=($(docker ps -a --format "{{.ID}}|{{.Names}}|{{.Image}}|{{.Status}}" | grep -v '| |'))
+
     if [[ ${#containers[@]} -eq 0 ]]; then
-      echo "⚠️ 当前没有任何容器"
-      read -p "按回车键返回主菜单..." && break
+      echo "⚠️ 当前没有有效容器"
+      echo "--------------------------------------------"
+      echo " 1) 清理无效容器"
+      echo " 0) 返回主菜单"
+      read -p "👉 请输入编号: " empty_choice
+      case $empty_choice in
+        1)
+          docker container prune -f
+          echo "✅ 已清理无效容器"
+          ;;
+        0) break ;;
+        *) echo "❌ 无效选择" ;;
+      esac
+      continue
     fi
 
+    # 显示有效容器列表
     for i in "${!containers[@]}"; do
       IFS='|' read -r cid name image status <<< "${containers[$i]}"
       echo "$i) $name  —  $image  —  $status"
     done
 
     echo "--------------------------------------------"
-    read -p "👉 请输入容器编号进行管理（直接回车退出）: " index
+    echo " a) 清理无效容器"
+    echo " 0) 返回主菜单"
+    read -p "👉 请输入容器编号或操作选项（直接回车退出）: " index
     [[ -z "$index" ]] && echo "🚪 已退出 Docker 管理中心" && break
+
+    if [[ "$index" == "a" ]]; then
+      docker container prune -f
+      echo "✅ 已清理无效容器"
+      continue
+    fi
 
     selected="${containers[$index]}"
     IFS='|' read -r cid name image status <<< "$selected"
