@@ -8,13 +8,8 @@ docker_management_center() {
 
     containers=()
     while IFS='|' read -r cid name image status; do
-      # 修复空容器名：尝试用容器 ID 作为名称
-      if [[ -z "$name" ]]; then
-        name="unnamed-$cid"
-      fi
-      if [[ -n "$image" ]]; then
-        containers+=("$cid|$name|$image|$status")
-      fi
+      [[ -z "$name" ]] && name="unnamed-$cid"
+      [[ -n "$image" ]] && containers+=("$cid|$name|$image|$status")
     done < <(docker ps -a --format "{{.ID}}|{{.Names}}|{{.Image}}|{{.Status}}")
 
     if [[ ${#containers[@]} -eq 0 ]]; then
@@ -24,10 +19,7 @@ docker_management_center() {
       echo " 0) 返回主菜单"
       read -p "👉 请输入编号: " empty_choice
       case $empty_choice in
-        1)
-          docker container prune -f
-          echo "✅ 已清理无效容器"
-          ;;
+        1) docker container prune -f && echo "✅ 已清理无效容器" ;;
         0) break ;;
         *) echo "❌ 无效选择" ;;
       esac
@@ -38,9 +30,7 @@ docker_management_center() {
       IFS='|' read -r cid name image status <<< "${containers[$i]}"
       compose_flag=""
       compose_project=$(docker inspect "$cid" --format '{{ index .Config.Labels "com.docker.compose.project" }}' 2>/dev/null)
-      if [[ -n "$compose_project" ]]; then
-        compose_flag="🧩 Compose"
-      fi
+      [[ -n "$compose_project" ]] && compose_flag="🧩 Compose"
       echo "$i) $name  —  $image  —  $status $compose_flag"
     done
 
@@ -49,12 +39,7 @@ docker_management_center() {
     echo " 0) 返回主菜单"
     read -p "👉 请输入容器编号或操作选项（直接回车退出）: " index
     [[ -z "$index" ]] && echo "🚪 已退出 Docker 管理中心" && break
-
-    if [[ "$index" == "a" ]]; then
-      docker container prune -f
-      echo "✅ 已清理无效容器"
-      continue
-    fi
+    [[ "$index" == "a" ]] && docker container prune -f && echo "✅ 已清理无效容器" && continue
 
     selected="${containers[$index]}"
     IFS='|' read -r cid name image status <<< "$selected"
@@ -69,20 +54,11 @@ docker_management_center() {
     read -p "👉 请输入操作编号: " action
 
     case $action in
-      1)
-        docker start "$cid" && echo "✅ 容器 $name 已启动" || echo "❌ 启动失败"
-        ;;
-      2)
-        docker stop "$cid" && echo "🚫 容器 $name 已停止" || echo "❌ 停止失败"
-        ;;
+      1) docker start "$cid" && echo "✅ 容器 $name 已启动" || echo "❌ 启动失败" ;;
+      2) docker stop "$cid" && echo "🚫 容器 $name 已停止" || echo "❌ 停止失败" ;;
       3)
         read -p "⚠️ 确认要删除容器 $name？(y/N): " confirm
-        if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
-          docker rm -f "$cid" && echo "✅ 容器 $name 已删除" || echo "❌ 删除失败"
-          log "删除容器：$name"
-        else
-          echo "🚫 已取消删除"
-        fi
+        [[ "$confirm" =~ ^[Yy]$ ]] && docker rm -f "$cid" && echo "✅ 容器 $name 已删除" && log "删除容器：$name" || echo "🚫 已取消删除"
         ;;
       4)
         echo "📦 正在拉取最新镜像：$image"
@@ -92,7 +68,6 @@ docker_management_center() {
 
         if [[ -n "$compose_project" ]]; then
           echo "📦 检测到 docker-compose 管理容器 [$compose_project]"
-
           compose_dir=$(docker inspect "$cid" --format '{{ index .Config.Labels "com.docker.compose.project.working_dir" }}' 2>/dev/null)
           [[ -z "$compose_dir" ]] && compose_dir="/opt/compose/$compose_project"
 
@@ -107,13 +82,19 @@ docker_management_center() {
             echo "❌ 未找到 docker-compose.yml，请检查路径：$compose_dir"
           fi
         else
+          echo "🔍 正在提取原容器配置..."
+          envs=$(docker inspect "$cid" --format '{{range .Config.Env}}-e {{.}} {{end}}' 2>/dev/null)
+          vols=$(docker inspect "$cid" --format '{{range .HostConfig.Binds}}-v {{.}} {{end}}' 2>/dev/null)
+          ports=$(docker inspect "$cid" --format '{{range $p, $conf := .HostConfig.PortBindings}}-p {{$conf[0].HostPort}}:{{$p}} {{end}}' 2>/dev/null)
+
+          echo "📝 配置预览："
+          echo "环境变量：$envs"
+          echo "挂载卷：$vols"
+          echo "端口映射：$ports"
+          log "更新容器前配置备份：$name | $envs $vols $ports"
+
           echo "🛑 停止并删除旧容器..."
           docker stop "$cid" && docker rm "$cid"
-
-          echo "🔍 正在提取原容器配置..."
-          envs=$(docker inspect "$cid" --format '{{range .Config.Env}}-e {{.}} {{end}}')
-          vols=$(docker inspect "$cid" --format '{{range .HostConfig.Binds}}-v {{.}} {{end}}')
-          ports=$(docker inspect "$cid" --format '{{range $p, $conf := .HostConfig.PortBindings}}-p {{$conf[0].HostPort}}:{{$p}} {{end}}')
 
           echo "🚀 使用原配置重新启动容器..."
           docker run -d --name "$name" $envs $vols $ports "$image"
@@ -121,10 +102,7 @@ docker_management_center() {
           log "更新容器：$name 使用镜像 $image（保留原配置）"
         fi
         ;;
-      5)
-        echo -e "\n📜 容器 $name 的最近日志："
-        docker logs --tail 50 "$cid"
-        ;;
+      5) echo -e "\n📜 容器 $name 的最近日志：" && docker logs --tail 50 "$cid" ;;
       0) continue ;;
       *) echo "❌ 无效操作编号" ;;
     esac
