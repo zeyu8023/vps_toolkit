@@ -232,16 +232,18 @@ show_ip_info() {
   echo -e "\n🌐 当前 IP 信息："
   echo "--------------------------------------------"
 
-  # 公网 IPv4
-  if curl -4 -s https://ifconfig.co >/dev/null 2>&1; then
-    echo "公网 IPv4：$(curl -4 -s https://ifconfig.co)"
+  # 公网 IPv4（强制使用 IPv4 协议）
+  ipv4=$(curl -4 -s https://ifconfig.co)
+  if [[ "$ipv4" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "公网 IPv4：$ipv4"
   else
     echo "公网 IPv4：未检测到 IPv4 地址"
   fi
 
-  # 公网 IPv6
-  if curl -6 -s https://ifconfig.co >/dev/null 2>&1; then
-    echo "公网 IPv6：$(curl -6 -s https://ifconfig.co)"
+  # 公网 IPv6（强制使用 IPv6 协议）
+  ipv6=$(curl -6 -s https://ifconfig.co)
+  if [[ "$ipv6" =~ : ]]; then
+    echo "公网 IPv6：$ipv6"
   else
     echo "公网 IPv6：未检测到 IPv6 地址"
   fi
