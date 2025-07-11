@@ -92,7 +92,9 @@ docker_management_center() {
 
         if [[ -n "$compose_project" ]]; then
           echo "📦 检测到 docker-compose 管理容器 [$compose_project]"
-          compose_dir="/opt/compose/$compose_project"
+
+          compose_dir=$(docker inspect "$cid" --format '{{ index .Config.Labels "com.docker.compose.project.working_dir" }}' 2>/dev/null)
+          [[ -z "$compose_dir" ]] && compose_dir="/opt/compose/$compose_project"
 
           if [[ -f "$compose_dir/docker-compose.yml" ]]; then
             echo "📁 切换到 compose 目录：$compose_dir"
