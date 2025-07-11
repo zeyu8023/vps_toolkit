@@ -348,9 +348,9 @@ while true; do
     4)
   echo -e "\n📦 正在获取已安装程序列表..."
   if command -v apt >/dev/null; then
-    mapfile -t pkgs < <(apt list --installed 2>/dev/null | grep -v "Listing..." | awk -F/ '{print $1}')
+    mapfile -t pkgs < <(apt list --installed 2>/dev/null | grep -v "Listing...")
   elif command -v yum >/dev/null; then
-    mapfile -t pkgs < <(yum list installed | awk 'NR>1 {print $1}' | cut -d. -f1)
+    mapfile -t pkgs < <(yum list installed | awk 'NR>1 {print $1 "\t" $2}')
   else
     echo "❌ 不支持的包管理器"
     continue
@@ -359,12 +359,23 @@ while true; do
   echo -e "\n📋 已安装程序列表（前 50 个）："
   for i in "${!pkgs[@]}"; do
     [[ $i -ge 50 ]] && break
-    echo "$i) ${pkgs[$i]}"
+    if command -v apt >/dev/null; then
+      name=$(echo "${pkgs[$i]}" | awk -F/ '{print $1}')
+      desc=$(echo "${pkgs[$i]}" | awk '{print $2}')
+      echo "$i) $name  —  $desc"
+    else
+      name=$(echo "${pkgs[$i]}" | awk '{print $1}')
+      desc=$(echo "${pkgs[$i]}" | awk '{print $2}')
+      echo "$i) $name  —  $desc"
+    fi
   done
 
-  read -p "👉 请输入要卸载的程序编号（如 0）: " index
-  pkg="${pkgs[$index]}"
+  echo -e "\n👉 输入程序编号进行卸载（直接回车退出）"
+  read -p "编号: " index
 
+  [[ -z "$index" ]] && echo "🚪 已退出卸载菜单" && continue
+
+  pkg=$(echo "${pkgs[$index]}" | awk -F/ '{print $1}' | awk '{print $1}')
   if [[ -z "$pkg" ]]; then
     echo "❌ 无效编号"
     continue
