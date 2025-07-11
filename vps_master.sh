@@ -26,14 +26,14 @@ show_menu() {
   echo -e "\033[1;34m 4.\033[0m 卸载指定程序"
   echo -e "\033[1;34m 5.\033[0m 设置自动缓存清理任务"
   echo -e "\033[1;34m 6.\033[0m 查看操作日志"
-  echo -e "\033[1:34m 7.\033[0m 启用 Swap（自定义大小）"
-  echo -e "\033[1:34m 8.\033[0m 删除 Swap"
-  echo -e "\033[1:34m 9.\033[0m 内存分析助手 🧠"
-  echo -e "\033[1:34m10.\033[0m 程序/服务搜索助手 🔍"
-  echo -e "\033[1:34m11.\033[0m 查看系统信息 🖥️"
-  echo -e "\033[1:34m12.\033[0m 一键安装常用环境（可选组件）🧰"
+  echo -e "\033[1;34m 7.\033[0m 启用 Swap（自定义大小）"
+  echo -e "\033[1;34m 8.\033[0m 删除 Swap"
+  echo -e "\033[1;34m 9.\033[0m 内存分析助手 🧠"
+  echo -e "\033[1;34m10.\033[0m 程序/服务搜索助手 🔍"
+  echo -e "\033[1;34m11.\033[0m 查看系统信息 🖥️"
+  echo -e "\033[1;34m12.\033[0m 一键安装常用环境（可选组件）🧰"
   echo -e "\033[1;34m13.\033[0m 网络设置中心 🌐"
-  echo -e "\033[1:34m 0.\033[0m 退出程序"
+  echo -e "\033[1;34m 0.\033[0m 退出程序"
   echo -e "\033[90m────────────────────────────────────────────────────\033[0m"
 }
 
@@ -69,9 +69,6 @@ install_environment_menu() {
   done
 }
 
-# ==========================
-# 子菜单函数（各类环境）
-# ==========================
 install_system_tools() {
   declare -A map=(
     [1]="curl"
@@ -136,13 +133,8 @@ install_docker_tools() {
     [1]="docker.io"
     [2]="docker-compose"
   )
-
-  # 清空上一次的选择记录
   to_install=""
-
   prompt_and_install "Docker 环境" map
-
-  # 仅当用户选择了 docker.io 时才启动服务
   if [[ "$to_install" == *"docker.io"* ]]; then
     echo -e "\n🔧 正在启动并设置 Docker 开机自启..."
     systemctl enable docker && systemctl start docker
@@ -156,7 +148,6 @@ prompt_and_install() {
   echo -e "\n🧩 $title 安装菜单：请选择要安装的组件（用空格分隔）"
   echo "--------------------------------------------"
 
-  # 检测包管理器
   local pkg_mgr=""
   if command -v apt >/dev/null; then
     pkg_mgr="apt"
@@ -167,11 +158,9 @@ prompt_and_install() {
     return
   fi
 
-  # 显示菜单并检测安装状态
   for i in "${!options[@]}"; do
     local pkg="${options[$i]}"
     local status=""
-
     if command -v "$pkg" >/dev/null 2>&1; then
       status="\033[1;32m✅（已安装）\033[0m"
     elif [[ "$pkg_mgr" == "apt" ]] && dpkg -l | grep -qw "$pkg"; then
@@ -179,7 +168,6 @@ prompt_and_install() {
     elif [[ "$pkg_mgr" == "yum" ]] && rpm -q "$pkg" >/dev/null 2>&1; then
       status="\033[1;32m✅（已安装）\033[0m"
     fi
-
     echo -e " $i) $pkg $status"
   done
 
@@ -211,102 +199,8 @@ prompt_and_install() {
 }
 
 # ==========================
-# 主程序循环
+# 网络设置中心 🌐
 # ==========================
-while true; do
-  show_menu
-  read -p "👉 请输入选项编号: " choice
-  case $choice in
-    1)
-      echo -e "\n📊 内存详情："
-      free -h
-      ;;
-    2)
-     echo -e "\n📋 高内存占用进程（前 15 个）："
-     echo "--------------------------------------------"
-     ps -eo pid,comm,rss --sort=-rss | awk 'NR==1{printf "%-4s %-8s %-25s %-10s\n", "No.", "PID", "COMMAND", "MEM(MiB)"; next}
-     {printf "%-4d %-8d %-25s %-10.2f\n", NR-1, $1, $2, $3/1024}' | head -n 16
-     echo "--------------------------------------------"
-     read -p "👉 输入要终止的 PID（留空跳过）: " pid
-     if [[ -n "$pid" ]]; then
-       kill -9 "$pid" && echo "✅ 已终止进程 $pid" || echo "❌ 无法终止进程 $pid"
-       log "终止进程：PID $pid"
-     else
-       echo "🚫 未输入 PID，未执行终止操作"
-     fi
-  ;;
-    3)
-      echo -e "\n🧹 正在释放缓存..."
-      sync; echo 3 > /proc/sys/vm/drop_caches
-      echo "✅ 缓存已释放"
-      ;;
-    4)
-      read -p "请输入要卸载的程序名: " pkg
-      if command -v apt >/dev/null; then
-        apt remove -y "$pkg"
-      elif command -v yum >/dev/null; then
-        yum remove -y "$pkg"
-      fi
-      ;;
-    5)
-      echo "0 * * * * root sync; echo 3 > /proc/sys/vm/drop_caches" > /etc/cron.d/clear_cache
-      echo "✅ 已设置每小时自动清理缓存"
-      ;;
-    6)
-      echo -e "\n📜 最近日志："
-      tail -n 20 "$LOG_FILE"
-      ;;
-    7)
-      read -p "请输入 Swap 大小（MB）: " size
-      fallocate -l ${size}M /swapfile
-      chmod 600 /swapfile
-      mkswap /swapfile
-      swapon /swapfile
-      echo "/swapfile none swap sw 0 0" >> /etc/fstab
-      echo "✅ Swap 启用成功"
-      ;;
-    8)
-      swapoff /swapfile && rm -f /swapfile
-      sed -i '/swapfile/d' /etc/fstab
-      echo "✅ Swap 已删除"
-      ;;
-    9)
-      echo -e "\n📊 内存分析助手（前 10 个进程）："
-      ps aux --sort=-%mem | awk 'NR<=10{print $0}'
-      ;;
-    10)
-      read -p "请输入程序或服务名关键词: " keyword
-      echo -e "\n🔍 搜索结果："
-      which "$keyword" 2>/dev/null && echo "✅ 可执行文件路径：$(which "$keyword")"
-      systemctl status "$keyword" 2>/dev/null | head -n 10 && echo "✅ systemd 服务状态已显示"
-      apt list --installed 2>/dev/null | grep "$keyword" && echo "✅ 已安装的软件包匹配"
-      ;;
-    11)
-      echo -e "\n🖥️ 系统信息："
-      echo "--------------------------------------------"
-      echo "主机名：$(hostname)"
-      echo "操作系统：$(lsb_release -ds 2>/dev/null || grep PRETTY_NAME /etc/os-release | cut -d= -f2 | tr -d '\"')"
-      echo "内核版本：$(uname -r)"
-      echo "CPU：$(lscpu | grep 'Model name' | cut -d: -f2 | xargs)"
-      echo "内存总量：$(free -h | awk '/Mem:/ {print $2}')"
-      echo "公网 IP：$(curl -s ifconfig.me)"
-      echo "--------------------------------------------"
-      ;;
-    12)
-      install_environment_menu
-      ;;
-    13)
-      network_settings_menu
-      ;;
-    0)
-      echo "👋 再见，感谢使用 VPS Toolkit！"
-      exit 0
-      ;;
-    *)
-      echo "❌ 无效选项，请重新输入"
-      ;;
-  esac
-
 network_settings_menu() {
   while true; do
     echo -e "\n🌐 网络设置中心："
@@ -413,6 +307,75 @@ manage_warp() {
   esac
 }
 
-  echo -e "\n按回车键返回主菜单..."
-  read
+# ==========================
+# 主程序循环
+# ==========================
+while true; do
+  show_menu
+  read -p "👉 请输入选项编号: " choice
+  case $choice in
+    1) free -h ;;
+    2)
+      echo -e "\n📋 高内存占用进程（前 15 个）："
+      echo "--------------------------------------------"
+      ps -eo pid,comm,rss --sort=-rss | awk 'NR==1{printf "%-4s %-8s %-25s %-10s\n", "No.", "PID", "COMMAND", "MEM(MiB)"; next}
+      {printf "%-4d %-8d %-25s %-10.2f\n", NR-1, $1, $2, $3/1024}' | head -n 16
+      echo "--------------------------------------------"
+      read -p "👉 输入要终止的 PID（留空跳过）: " pid
+      if [[ -n "$pid" ]]; then
+        kill -9 "$pid" && echo "✅ 已终止进程 $pid" || echo "❌ 无法终止进程 $pid"
+        log "终止进程：PID $pid"
+      else
+        echo "🚫 未输入 PID，未执行终止操作"
+      fi
+      ;;
+    3) sync; echo 3 > /proc/sys/vm/drop_caches && echo "✅ 缓存已释放" ;;
+    4)
+      read -p "请输入要卸载的程序名: " pkg
+      if command -v apt >/dev/null; then
+        apt remove -y "$pkg"
+      elif command -v yum >/dev/null; then
+        yum remove -y "$pkg"
+      fi
+      ;;
+    5)
+      echo "0 * * * * root sync; echo 3 > /proc/sys/vm/drop_caches" > /etc/cron.d/clear_cache
+      echo "✅ 已设置每小时自动清理缓存"
+      ;;
+    6) tail -n 20 "$LOG_FILE" ;;
+    7)
+      read -p "请输入 Swap 大小（MB）: " size
+      fallocate -l ${size}M /swapfile
+      chmod 600 /swapfile
+      mkswap /swapfile
+      swapon /swapfile
+      echo "/swapfile none swap sw 0 0" >> /etc/fstab
+      echo "✅ Swap 启用成功"
+      ;;
+    8)
+      swapoff /swapfile && rm -f /swapfile
+      sed -i '/swapfile/d' /etc/fstab
+      echo "✅ Swap 已删除"
+      ;;
+    9) ps aux --sort=-%mem | awk 'NR<=10{print $0}' ;;
+    10)
+      read -p "请输入程序或服务名关键词: " keyword
+      which "$keyword" 2>/dev/null && echo "✅ 可执行文件路径：$(which "$keyword")"
+      systemctl status "$keyword" 2>/dev/null | head -n 10 && echo "✅ systemd 服务状态已显示"
+      apt list --installed 2>/dev/null | grep "$keyword" && echo "✅ 已安装的软件包匹配"
+      ;;
+    11)
+      echo "主机名：$(hostname)"
+      echo "操作系统：$(lsb_release -ds 2>/dev/null || grep PRETTY_NAME /etc/os-release | cut -d= -f2 | tr -d '\"')"
+      echo "内核版本：$(uname -r)"
+      echo "CPU：$(lscpu | grep 'Model name' | cut -d: -f2 | xargs)"
+      echo "内存总量：$(free -h | awk '/Mem:/ {print $2}')"
+      echo "公网 IP：$(curl -s ifconfig.me)"
+      ;;
+    12) install_environment_menu ;;
+    13) network_settings_menu ;;
+    0) echo "👋 再见，感谢使用 VPS Toolkit！"; exit 0 ;;
+    *) echo "❌ 无效选项，请重新输入" ;;
+  esac
+  read -p "按回车键返回主菜单..."
 done
