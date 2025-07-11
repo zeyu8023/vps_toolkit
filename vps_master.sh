@@ -346,13 +346,43 @@ while true; do
       ;;
     3) sync; echo 3 > /proc/sys/vm/drop_caches && echo "✅ 缓存已释放" ;;
     4)
-      read -p "请输入要卸载的程序名: " pkg
-      if command -v apt >/dev/null; then
-        apt remove -y "$pkg"
-      elif command -v yum >/dev/null; then
-        yum remove -y "$pkg"
-      fi
-      ;;
+  echo -e "\n📦 正在获取已安装程序列表..."
+  if command -v apt >/dev/null; then
+    mapfile -t pkgs < <(apt list --installed 2>/dev/null | grep -v "Listing..." | awk -F/ '{print $1}')
+  elif command -v yum >/dev/null; then
+    mapfile -t pkgs < <(yum list installed | awk 'NR>1 {print $1}' | cut -d. -f1)
+  else
+    echo "❌ 不支持的包管理器"
+    continue
+  fi
+
+  echo -e "\n📋 已安装程序列表（前 50 个）："
+  for i in "${!pkgs[@]}"; do
+    [[ $i -ge 50 ]] && break
+    echo "$i) ${pkgs[$i]}"
+  done
+
+  read -p "👉 请输入要卸载的程序编号（如 0）: " index
+  pkg="${pkgs[$index]}"
+
+  if [[ -z "$pkg" ]]; then
+    echo "❌ 无效编号"
+    continue
+  fi
+
+  read -p "⚠️ 确认要卸载 $pkg？(y/N): " confirm
+  if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+    if command -v apt >/dev/null; then
+      apt remove -y "$pkg"
+    elif command -v yum >/dev/null; then
+      yum remove -y "$pkg"
+    fi
+    echo "✅ 已卸载 $pkg"
+    log "卸载程序：$pkg"
+  else
+    echo "🚫 已取消卸载"
+  fi
+  ;;
     5)
       echo "0 * * * * root sync; echo 3 > /proc/sys/vm/drop_caches" > /etc/cron.d/clear_cache
       echo "✅ 已设置每小时自动清理缓存"
