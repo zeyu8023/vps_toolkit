@@ -36,7 +36,12 @@ docker_management_center() {
 
     for i in "${!containers[@]}"; do
       IFS='|' read -r cid name image status <<< "${containers[$i]}"
-      echo "$i) $name  —  $image  —  $status"
+      compose_flag=""
+      compose_project=$(docker inspect "$cid" --format '{{ index .Config.Labels "com.docker.compose.project" }}' 2>/dev/null)
+      if [[ -n "$compose_project" ]]; then
+        compose_flag="🧩 Compose"
+      fi
+      echo "$i) $name  —  $image  —  $status $compose_flag"
     done
 
     echo "--------------------------------------------"
@@ -83,8 +88,7 @@ docker_management_center() {
         echo "📦 正在拉取最新镜像：$image"
         docker pull "$image"
 
-        echo "🔍 检查是否为 docker-compose 管理容器..."
-        compose_project=$(docker inspect "$cid" --format '{{ index .Config.Labels "com.docker.compose.project" }}')
+        compose_project=$(docker inspect "$cid" --format '{{ index .Config.Labels "com.docker.compose.project" }}' 2>/dev/null)
 
         if [[ -n "$compose_project" ]]; then
           echo "📦 检测到 docker-compose 管理容器 [$compose_project]"
