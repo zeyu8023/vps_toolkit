@@ -15,19 +15,24 @@ docker_management_center() {
     if [[ ${#containers[@]} -eq 0 ]]; then
       echo "⚠️ 当前没有有效容器"
       echo "--------------------------------------------"
-      echo " 1) 清理无效容器"
-      echo " 0) 返回主菜单"
-      read -p "👉 请输入编号: " empty_choice
-      case $empty_choice in
-        1) docker container prune -f && echo "✅ 已清理无效容器" ;;
-        0) break ;;
+      echo " a) 清理无效容器"
+      echo " r) 返回主菜单"
+      read -p "👉 请输入操作选项: " empty_choice
+      case "$empty_choice" in
+        a) docker container prune -f && echo "✅ 已清理无效容器" ;;
+        r) break ;;
         *) echo "❌ 无效选择" ;;
       esac
       continue
     fi
 
-    for i in "${!containers[@]}"; do
-      IFS='|' read -r cid name image status <<< "${containers[$i]}"
+    echo "操作菜单："
+    echo " a) 清理无效容器"
+    echo " r) 返回主菜单"
+    echo "--------------------------------------------"
+
+    for ((i=1; i<=${#containers[@]}; i++)); do
+      IFS='|' read -r cid name image status <<< "${containers[$((i-1))]}"
       compose_flag=""
       compose_project=$(docker inspect "$cid" --format '{{ index .Config.Labels "com.docker.compose.project" }}' 2>/dev/null)
       [[ -n "$compose_project" ]] && compose_flag="🧩 Compose"
@@ -36,13 +41,20 @@ docker_management_center() {
     done
 
     echo "--------------------------------------------"
-    echo " a) 清理无效容器"
-    echo " 0) 返回主菜单"
     read -p "👉 请输入容器编号或操作选项（直接回车退出）: " index
     [[ -z "$index" ]] && echo "🚪 已退出 Docker 管理中心" && break
-    [[ "$index" == "a" ]] && docker container prune -f && echo "✅ 已清理无效容器" && continue
 
-    selected="${containers[$index]}"
+    if [[ "$index" == "a" ]]; then
+      docker container prune -f && echo "✅ 已清理无效容器"
+      continue
+    elif [[ "$index" == "r" ]]; then
+      break
+    elif ! [[ "$index" =~ ^[0-9]+$ ]] || (( index < 1 || index > ${#containers[@]} )); then
+      echo "❌ 无效编号"
+      continue
+    fi
+
+    selected="${containers[$((index-1))]}"
     IFS='|' read -r cid name image status <<< "$selected"
 
     echo -e "\n🛠️ 选择操作：容器 [$name]"
