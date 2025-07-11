@@ -7,17 +7,22 @@ echo "🚀 正在安装 VPS Toolkit..."
 # 安装路径
 INSTALL_DIR="/opt/vps_toolkit"
 BIN_PATH="/usr/local/bin/tool"
-SCRIPT_URL="https://raw.githubusercontent.com/zeyu8023/vps_toolkit/main/vps_master.sh"
+REPO_URL="https://github.com/zeyu8023/vps_toolkit.git"
 
-# 创建目录
-mkdir -p "$INSTALL_DIR"
+# 清理旧版本
+rm -rf "$INSTALL_DIR"
 
-# 下载主脚本
-echo "📥 正在下载脚本到 $INSTALL_DIR..."
-curl -fsSL "$SCRIPT_URL" -o "$INSTALL_DIR/vps_master.sh"
+# 克隆完整仓库
+echo "📥 正在克隆仓库到 $INSTALL_DIR..."
+git clone "$REPO_URL" "$INSTALL_DIR"
 
 # 设置权限
 chmod +x "$INSTALL_DIR/vps_master.sh"
+find "$INSTALL_DIR/modules" -type f -name "*.sh" -exec chmod +x {} \;
+
+# 创建日志目录（如果未存在）
+mkdir -p "$INSTALL_DIR/logs"
+touch "$INSTALL_DIR/logs/vps_toolkit.log"
 
 # 创建快捷命令
 echo "🔗 正在创建快捷命令：tool"
