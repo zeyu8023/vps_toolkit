@@ -31,7 +31,8 @@ docker_management_center() {
       compose_flag=""
       compose_project=$(docker inspect "$cid" --format '{{ index .Config.Labels "com.docker.compose.project" }}' 2>/dev/null)
       [[ -n "$compose_project" ]] && compose_flag="🧩 Compose"
-      echo "$i) $name  —  $image  —  $status $compose_flag"
+      ports=$(docker inspect "$cid" --format '{{range $p, $conf := .NetworkSettings.Ports}}{{if $conf}}{{$p}} → {{$conf[0].HostPort}} {{end}}{{end}}' 2>/dev/null)
+      echo "$i) $name  —  $image  —  $status $compose_flag  —  🔌 $ports"
     done
 
     echo "--------------------------------------------"
