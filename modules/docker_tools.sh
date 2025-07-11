@@ -86,7 +86,7 @@ docker_management_center() {
           echo "🔍 正在提取原容器配置..."
           envs=$(docker inspect "$cid" --format '{{range .Config.Env}}-e {{.}} {{end}}' 2>/dev/null)
           vols=$(docker inspect "$cid" --format '{{range .HostConfig.Binds}}-v {{.}} {{end}}' 2>/dev/null)
-          ports=$(docker inspect "$cid" --format '{{range $p, $conf := .HostConfig.PortBindings}}-p {{$conf[0].HostPort}}:{{$p}} {{end}}' 2>/dev/null)
+          ports=$(docker inspect "$cid" --format '{{range $p, $conf := .HostConfig.PortBindings}}{{range $i, $v := $conf}}-p {{$v.HostIp}}:{{$v.HostPort}}:{{$p}} {{end}}{{end}}' 2>/dev/null)
 
           echo "📝 配置预览："
           echo "环境变量：$envs"
