@@ -232,7 +232,7 @@ show_ip_info() {
   echo -e "\n🌐 当前 IP 信息："
   echo "--------------------------------------------"
   echo "公网 IPv4：$(curl -s ifconfig.me)"
-  echo "公网 IPv6：$(curl -6 -s https://ifconfig.co)"
+  echo "公网 IPv6：$(curl -s https://ipv6.icanhazip.com)"
   echo "内网地址："
   ip -4 a | grep inet | awk '{print $2}' | grep -v 127.0.0.1
   echo "--------------------------------------------"
