@@ -1,20 +1,33 @@
 #!/bin/bash
 # 🚀 VPS 管理工具面板 | By XIAOYU
 
-# ✅ 获取绝对路径，确保模块加载正确
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODULE_DIR="$SCRIPT_DIR/modules"
 
-# ✅ 加载模块
-source "$MODULE_DIR/system_info.sh"
-source "$MODULE_DIR/network_tools.sh"
-source "$MODULE_DIR/docker_tools.sh"
-source "$MODULE_DIR/memory_tools.sh"
-source "$MODULE_DIR/swap_tools.sh"
-source "$MODULE_DIR/install_tools.sh"
-source "$MODULE_DIR/log_tools.sh" 2>/dev/null || echo "⚠️ log_tools.sh 未找到，将跳过日志功能"
+load_module() {
+  local file="$1"
+  local func="$2"
+  if [[ -f "$MODULE_DIR/$file" ]]; then
+    source "$MODULE_DIR/$file"
+    if ! declare -F "$func" >/dev/null; then
+      echo "❌ 模块 $file 加载失败：未定义函数 $func"
+      exit 1
+    fi
+  else
+    echo "❌ 模块文件缺失：$file"
+    exit 1
+  fi
+}
 
-# ✅ 主循环
+# ✅ 加载所有模块
+load_module "system_info.sh" "system_info"
+load_module "network_tools.sh" "network_tools"
+load_module "docker_tools.sh" "docker_management_center"
+load_module "memory_tools.sh" "memory_management_center"
+load_module "swap_tools.sh" "swap_management_center"
+load_module "install_tools.sh" "install_tools"
+load_module "log_tools.sh" "log_tools"
+
 while true; do
   clear
   echo "╔════════════════════════════════════════════════════╗"
