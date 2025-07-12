@@ -1,4 +1,5 @@
 #!/bin/bash
+echo "✅ 已加载 memory_tools.sh"
 # 模块：内存管理中心 🧠
 
 memory_management_center() {
