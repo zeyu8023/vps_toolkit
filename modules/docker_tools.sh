@@ -1,7 +1,16 @@
-# Version: 2.3.0
+# Version: 2.3.1
 #!/bin/bash
 echo "✅ 已加载 docker_tools.sh"
 # 模块：Docker 管理中心
+
+LOG_FILE="/opt/vps_toolkit/logs/vps_toolkit.log"
+
+log() {
+  local message="$1"
+  local timestamp
+  timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+  echo "[$timestamp] [docker_tools] $message" >> "$LOG_FILE"
+}
 
 docker_management_center() {
   while true; do
@@ -90,7 +99,6 @@ edit_compose_project() {
     return
   fi
 
-  # ✅ 自动识别配置文件名
   if [[ -f "$compose_dir/docker-compose.yml" ]]; then
     yml="$compose_dir/docker-compose.yml"
   elif [[ -f "$compose_dir/docker-compose.yaml" ]]; then
@@ -132,7 +140,7 @@ docker_container_menu() {
       echo " r) 返回上一级"
       read -p "👉 请输入操作选项: " empty_choice
       case "$empty_choice" in
-        a) docker container prune -f && echo "✅ 已清理无效容器" ;;
+        a) docker container prune -f && echo "✅ 已清理无效容器" && log "清理无效容器" ;;
         r) break ;;
         *) echo "❌ 无效选择" ;;
       esac
@@ -167,7 +175,7 @@ docker_container_menu() {
     [[ -z "$index" ]] && echo "🚪 已退出容器管理中心" && break
 
     if [[ "$index" == "a" ]]; then
-      docker container prune -f && echo "✅ 已清理无效容器"
+      docker container prune -f && echo "✅ 已清理无效容器" && log "清理无效容器"
       continue
     elif [[ "$index" == "r" ]]; then
       break
@@ -190,8 +198,8 @@ docker_container_menu() {
     read -p "👉 请输入操作编号: " action
 
     case $action in
-      1) docker start "$cid" && echo "✅ 容器 $name 已启动" || echo "❌ 启动失败" ;;
-      2) docker stop "$cid" && echo "🚫 容器 $name 已停止" || echo "❌ 停止失败" ;;
+      1) docker start "$cid" && echo "✅ 容器 $name 已启动" && log "启动容器：$name" || echo "❌ 启动失败" ;;
+      2) docker stop "$cid" && echo "🚫 容器 $name 已停止" && log "停止容器：$name" || echo "❌ 停止失败" ;;
       3)
         read -p "⚠️ 确认要删除容器 $name？(y/N): " confirm
         [[ "$confirm" =~ ^[Yy]$ ]] && docker rm -f "$cid" && echo "✅ 容器 $name 已删除" && log "删除容器：$name" || echo "🚫 已取消删除"
