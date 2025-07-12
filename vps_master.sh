@@ -1,7 +1,6 @@
 #!/bin/bash
 # 🚀 VPS 管理工具面板 | By XIAOYU
 
-# ✅ 固定路径，确保模块加载成功
 SCRIPT_DIR="/opt/vps_toolkit"
 MODULE_DIR="$SCRIPT_DIR/modules"
 LOG_FILE="$SCRIPT_DIR/logs/vps_toolkit.log"
@@ -21,7 +20,8 @@ declare -A modules=(
   [4]="memory_tools.sh:memory_management_center"
   [5]="swap_tools.sh:swap_management_center"
   [6]="install_tools.sh:install_tools"
-  [7]="log_tools.sh:log_tools"
+  [7]="test_tools.sh:test_tools"
+  [8]="log_tools.sh:log_tools"
 )
 
 # ✅ 加载所有模块并验证函数
@@ -63,7 +63,8 @@ while true; do
   echo " 4. 内存管理中心 🧠"
   echo " 5. Swap 管理中心 💾"
   echo " 6. 一键安装常用环境 🧰"
-  echo " 7. 查看操作日志 📜"
+  echo " 7. 常用测试脚本功能 🧪"
+  echo " 8. 查看操作日志 📜"
   echo " 0. 退出程序"
   echo "────────────────────────────────────────────────────"
   read -p "👉 请输入选项编号: " choice
