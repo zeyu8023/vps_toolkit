@@ -1,3 +1,4 @@
+# Version: 2.3.0
 #!/bin/bash
 # ✅ 已加载 install_tools.sh
 # 模块：环境安装器
