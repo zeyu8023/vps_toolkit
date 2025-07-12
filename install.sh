@@ -1,16 +1,18 @@
 #!/bin/bash
-# 🚀 VPS Toolkit 安装脚本 | 自动修复模块结构
+# 🚀 VPS Toolkit 安装脚本 | 含 tool 快速启动
 
 INSTALL_DIR="/opt/vps_toolkit"
 MODULE_DIR="$INSTALL_DIR/modules"
+LOG_DIR="$INSTALL_DIR/logs"
 
 echo "📦 正在安装 VPS Toolkit 到 $INSTALL_DIR..."
-mkdir -p "$MODULE_DIR" "$INSTALL_DIR/logs"
+mkdir -p "$MODULE_DIR" "$LOG_DIR"
 
-# ✅ 下载主脚本（你可以替换为真实地址）
+# ✅ 下载主脚本
 curl -sSL https://raw.githubusercontent.com/zeyu8023/vps_toolkit/main/vps_master.sh -o "$INSTALL_DIR/vps_master.sh"
+chmod +x "$INSTALL_DIR/vps_master.sh"
 
-# ✅ 自动修复模块结构
+# ✅ 修复模块结构
 declare -A required_functions=(
   ["system_info.sh"]="system_info"
   ["network_tools.sh"]="network_tools"
@@ -21,6 +23,7 @@ declare -A required_functions=(
   ["log_tools.sh"]="log_tools"
 )
 
+echo "🔧 正在修复模块结构..."
 for file in "${!required_functions[@]}"; do
   path="$MODULE_DIR/$file"
   func="${required_functions[$file]}"
@@ -40,9 +43,12 @@ for file in "${!required_functions[@]}"; do
   fi
 done
 
-chmod +x "$INSTALL_DIR/vps_master.sh"
+# ✅ 创建快速启动命令：tool
+echo "🚀 创建快速启动命令：tool"
+ln -sf "$INSTALL_DIR/vps_master.sh" /usr/local/bin/tool
+chmod +x /usr/local/bin/tool
 
-echo "✅ 安装完成！你可以运行以下命令启动面板："
+echo "✅ 安装完成！你可以使用以下命令启动面板："
 echo ""
-echo "bash $INSTALL_DIR/vps_master.sh"
+echo "tool"
 echo ""
