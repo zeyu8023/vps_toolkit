@@ -35,6 +35,15 @@ create_compose_project() {
   touch "$yml"
   echo "📁 项目目录已创建：$dir"
   echo "📄 请编辑 docker-compose.yml 配置文件"
+
+  echo "────────────────────────────────────────────"
+  echo "📝 请输入 Docker Compose 配置内容"
+  echo "📌 编辑提示："
+  echo " - 按 Ctrl+O 保存"
+  echo " - 按回车确认文件名"
+  echo " - 按 Ctrl+X 退出编辑器"
+  echo "────────────────────────────────────────────"
+  read -p "按回车键开始编辑..." dummy
   nano "$yml"
 
   if [[ ! -s "$yml" ]]; then
