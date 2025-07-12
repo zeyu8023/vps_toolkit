@@ -1,14 +1,18 @@
 #!/bin/bash
 # 🚀 VPS 管理工具面板 | By XIAOYU
 
-source "$(dirname "$0")/modules/system_info.sh"
-source "$(dirname "$0")/modules/network_tools.sh"
-source "$(dirname "$0")/modules/docker_tools.sh"
-source "$(dirname "$0")/modules/memory_tools.sh"
-source "$(dirname "$0")/modules/swap_tools.sh"
-source "$(dirname "$0")/modules/install_tools.sh"
-source "$(dirname "$0")/modules/log_tools.sh"
+# ✅ 加载模块函数
+MODULE_DIR="$(dirname "$0")/modules"
 
+source "$MODULE_DIR/system_info.sh"
+source "$MODULE_DIR/network_tools.sh"
+source "$MODULE_DIR/docker_tools.sh"
+source "$MODULE_DIR/memory_tools.sh"
+source "$MODULE_DIR/swap_tools.sh"
+source "$MODULE_DIR/install_tools.sh"
+source "$MODULE_DIR/log_tools.sh"
+
+# ✅ 主循环
 while true; do
   clear
   echo "╔════════════════════════════════════════════════════╗"
