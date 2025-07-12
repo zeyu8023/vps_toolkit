@@ -2,6 +2,17 @@
 echo "✅ 已加载 system_tools.sh"
 # 模块：系统工具中心
 
+# ✅ 通用依赖检测函数
+ensure_command() {
+  local cmd="$1"
+  local pkg="$2"
+  if ! command -v "$cmd" &>/dev/null; then
+    echo "❌ 缺少命令：$cmd（建议安装 $pkg）"
+    read -p "📥 是否安装 $pkg？(y/n): " confirm
+    [[ "$confirm" == "y" ]] && sudo apt update && sudo apt install "$pkg" -y
+  fi
+}
+
 system_tools() {
   while true; do
     echo -e "\n🛠️ 系统工具中心"
@@ -22,6 +33,7 @@ system_tools() {
 
     case "$choice" in
       1)
+        ensure_command lsof lsof
         read -p "🔍 输入端口号: " port
         echo -e "\n📡 正在查询端口 $port 的占用情况..."
         result=$(sudo lsof -i :"$port" | grep LISTEN)
@@ -37,6 +49,8 @@ system_tools() {
         fi
         ;;
       2)
+        ensure_command netstat net-tools
+        ensure_command column bsdmainutils
         read -p "🔍 筛选协议（tcp/udp/all）: " proto
         echo -e "\n📡 当前监听端口列表"
         case "$proto" in
@@ -51,10 +65,13 @@ system_tools() {
         ps aux --sort=-%cpu | head -n 10 | column -t
         ;;
       4)
+        ensure_command curl curl
+        ensure_command jq jq
         echo -e "\n🌍 公网 IP 与地理位置"
         curl -s ipinfo.io | jq '.ip, .city, .region, .country, .org'
         ;;
       5)
+        ensure_command docker docker.io
         echo -e "\n🧹 正在清理系统垃圾..."
         sudo apt autoremove -y && sudo apt clean
         sudo rm -rf /var/log/*.log /tmp/*
@@ -66,6 +83,7 @@ system_tools() {
         sudo du -h --max-depth=1 / | sort -hr | head -n 10
         ;;
       7)
+        ensure_command netstat net-tools
         echo -e "\n🌐 网络连接数（按 IP）"
         netstat -an | grep ESTABLISHED | awk '{print $5}' | cut -d: -f1 | sort | uniq -c | sort -nr | head
         ;;
