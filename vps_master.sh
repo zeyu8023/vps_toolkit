@@ -1,5 +1,5 @@
 #!/bin/bash
-# 🚀 VPS 管理工具面板 | By XIAOYU
+# 🚀 VPS Toolkit 主菜单脚本 | By XIAOYU
 
 SCRIPT_DIR="/opt/vps_toolkit"
 MODULE_DIR="$SCRIPT_DIR/modules"
@@ -24,7 +24,7 @@ declare -A modules=(
   [8]="log_tools.sh:log_tools"
 )
 
-# ✅ 加载所有模块并验证函数
+# ✅ 加载所有模块
 for key in "${!modules[@]}"; do
   IFS=":" read -r file func <<< "${modules[$key]}"
   path="$MODULE_DIR/$file"
@@ -43,38 +43,56 @@ done
 # ✅ 主菜单循环
 while true; do
   clear
-  echo "╔════════════════════════════════════════════════════╗"
-  echo "║         🚀 VPS 管理工具面板  |  By XIAOYU           ║"
-  echo "╚════════════════════════════════════════════════════╝"
 
+  # 🎨 颜色定义
+  GREEN="\033[1;32m"
+  BLUE="\033[1;34m"
+  YELLOW="\033[1;33m"
+  RESET="\033[0m"
+
+  # 📐 标题宽度
+  width=60
+  title="🚀 VPS 管理工具面板  |  By XIAOYU"
+
+  # 🔷 打印标题框
+  printf "${BLUE}╔%${width}s╗${RESET}\n" | tr ' ' '═'
+  printf "${BLUE}║ %-${width}s ║${RESET}\n" "$title"
+  printf "${BLUE}╚%${width}s╝${RESET}\n" | tr ' ' '═'
+
+  # 📊 系统状态信息
   mem_used=$(free -m | awk '/Mem:/ {print $3}')
   mem_total=$(free -m | awk '/Mem:/ {print $2}')
   disk_used=$(df -h / | awk 'NR==2 {print $5}')
   disk_total=$(df -h / | awk 'NR==2 {print $2}')
-  load_avg=$(uptime | awk -F'load average:' '{print $2}' | sed 's/^ //')
+  cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print 100 - $8}')
+  cpu_usage=$(printf "%.1f" "$cpu_usage")
 
-  echo "📊 内存使用：已用: ${mem_used}Mi / 总: ${mem_total}Mi"
-  echo "💽 磁盘使用：${disk_used} 已用 / 总: ${disk_total}"
-  echo "⚙️ 系统负载：${load_avg}"
-  echo "────────────────────────────────────────────────────"
-  echo " 1. 查看系统信息 🖥️"
-  echo " 2. 网络设置中心 🌐"
-  echo " 3. Docker 管理中心 🐳"
-  echo " 4. 内存管理中心 🧠"
-  echo " 5. Swap 管理中心 💾"
-  echo " 6. 一键安装常用环境 🧰"
-  echo " 7. 常用测试脚本功能 🧪"
-  echo " 8. 查看操作日志 📜"
-  echo " 0. 退出程序"
-  echo "────────────────────────────────────────────────────"
-  read -p "👉 请输入选项编号: " choice
+  printf "${GREEN}📊 内存使用：已用: %sMi / 总: %sMi${RESET}\n" "$mem_used" "$mem_total"
+  printf "${GREEN}💽 磁盘使用：%s 已用 / 总: %s${RESET}\n" "$disk_used" "$disk_total"
+  printf "${GREEN}⚙️ CPU 使用率：${cpu_usage}%%${RESET}\n"
+
+  # 📋 菜单项
+  printf "${YELLOW}%s${RESET}\n" "$(printf '─%.0s' $(seq 1 $((width+2))))"
+  printf "${YELLOW} 1.${RESET} 查看系统信息 🖥️\n"
+  printf "${YELLOW} 2.${RESET} 网络设置中心 🌐\n"
+  printf "${YELLOW} 3.${RESET} Docker 管理中心 🐳\n"
+  printf "${YELLOW} 4.${RESET} 内存管理中心 🧠\n"
+  printf "${YELLOW} 5.${RESET} Swap 管理中心 💾\n"
+  printf "${YELLOW} 6.${RESET} 一键安装常用环境 🧰\n"
+  printf "${YELLOW} 7.${RESET} 常用测试脚本功能 🧪\n"
+  printf "${YELLOW} 8.${RESET} 查看操作日志 📜\n"
+  printf "${YELLOW} 0.${RESET} 退出程序\n"
+  printf "${YELLOW}%s${RESET}\n" "$(printf '─%.0s' $(seq 1 $((width+2))))"
+
+  # 🔽 用户输入
+  read -p "$(echo -e "${BLUE}👉 请输入选项编号: ${RESET}")" choice
 
   if [[ "$choice" == "0" ]]; then
-    echo "👋 再见！" && exit 0
+    echo -e "${GREEN}👋 再见！${RESET}" && exit 0
   elif [[ -n "${modules[$choice]}" ]]; then
     IFS=":" read -r _ func <<< "${modules[$choice]}"
     "$func"
   else
-    echo "❌ 无效选项，请重新输入。" && sleep 1
+    echo -e "${YELLOW}❌ 无效选项，请重新输入。${RESET}" && sleep 1
   fi
 done
