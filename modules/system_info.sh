@@ -1,6 +1,15 @@
-# Version: 2.3.0
+# Version: 2.3.1
 #!/bin/bash
 echo "✅ 已加载 system_info.sh"
+
+LOG_FILE="/opt/vps_toolkit/logs/vps_toolkit.log"
+
+log() {
+  local message="$1"
+  local timestamp
+  timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+  echo "[$timestamp] [system_info] $message" >> "$LOG_FILE"
+}
 
 system_info() {
   while true; do
@@ -14,8 +23,13 @@ system_info() {
     read -p "👉 请输入操作编号: " sys_choice
 
     case "$sys_choice" in
-      1) show_system_info ; read -p "🔙 回车返回菜单..." ;;
-      2) search_program ; read -p "🔙 回车返回菜单..." ;;
+      1)
+        show_system_info
+        log "查看系统信息概览"
+        read -p "🔙 回车返回菜单..." ;;
+      2)
+        search_program
+        read -p "🔙 回车返回菜单..." ;;
       0) break ;;
       *) echo "❌ 无效选项，请重新输入。" && sleep 1 ;;
     esac
@@ -34,6 +48,8 @@ show_system_info() {
 
 search_program() {
   read -p "请输入程序或服务名关键词: " keyword
+  log "搜索程序或服务状态：关键词 [$keyword]"
+
   which "$keyword" 2>/dev/null && echo "✅ 可执行文件路径：$(which "$keyword")"
   systemctl status "$keyword" 2>/dev/null | head -n 10 && echo "✅ systemd 服务状态已显示"
   apt list --installed 2>/dev/null | grep "$keyword" && echo "✅ 已安装的软件包匹配"
