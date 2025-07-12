@@ -54,17 +54,17 @@ while true; do
   width=60
   title="🚀 VPS 管理工具面板  |  By XIAOYU"
 
-  # 🔷 打印标题框
-  printf "${BLUE}╔%${width}s╗${RESET}\n" | tr ' ' '═'
-  printf "${BLUE}║ %-${width}s ║${RESET}\n" "$title"
-  printf "${BLUE}╚%${width}s╝${RESET}\n" | tr ' ' '═'
+  # 🔷 打印 ASCII 标题框（兼容所有终端）
+  printf "${BLUE}+%${width}s+${RESET}\n" | tr ' ' '-'
+  printf "${BLUE}| %-${width}s |${RESET}\n" "$title"
+  printf "${BLUE}+%${width}s+${RESET}\n" | tr ' ' '-'
 
   # 📊 系统状态信息
   mem_used=$(free -m | awk '/Mem:/ {print $3}')
   mem_total=$(free -m | awk '/Mem:/ {print $2}')
   disk_used=$(df -h / | awk 'NR==2 {print $5}')
   disk_total=$(df -h / | awk 'NR==2 {print $2}')
-  cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print 100 - $8}')
+  cpu_usage=$(top -bn1 | grep "Cpu(s)" | sed 's/.*, *\([0-9.]*\)%* id.*/\1/' | awk '{print 100 - $1}')
   cpu_usage=$(printf "%.1f" "$cpu_usage")
 
   printf "${GREEN}📊 内存使用：已用: %sMi / 总: %sMi${RESET}\n" "$mem_used" "$mem_total"
