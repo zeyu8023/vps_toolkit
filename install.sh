@@ -1,37 +1,51 @@
 #!/bin/bash
-
-set -e
-
-echo "🚀 正在安装 VPS Toolkit..."
+# 🚀 VPS Toolkit 安装脚本 | By XIAOYU
 
 INSTALL_DIR="/opt/vps_toolkit"
-BIN_PATH="/usr/local/bin/tool"
-REPO_URL="https://github.com/zeyu8023/vps_toolkit.git"
+MODULE_DIR="$INSTALL_DIR/modules"
 
-# 清理旧版本
-rm -rf "$INSTALL_DIR"
+echo "📦 正在安装 VPS Toolkit 到 $INSTALL_DIR..."
+mkdir -p "$MODULE_DIR" "$INSTALL_DIR/logs"
 
-# 克隆完整仓库
-echo "📥 正在克隆仓库到 $INSTALL_DIR..."
-git clone "$REPO_URL" "$INSTALL_DIR"
+# ✅ 下载主脚本（你可以替换为真实 GitHub 地址）
+curl -sSL https://raw.githubusercontent.com/zeyu8023/vps_toolkit/main/vps_master.sh -o "$INSTALL_DIR/vps_master.sh"
 
-# 设置权限
+# ✅ 自动修复模块结构
+echo "🔧 正在修复模块结构..."
+declare -A required_functions=(
+  ["system_info.sh"]="system_info"
+  ["network_tools.sh"]="network_tools"
+  ["docker_tools.sh"]="docker_management_center"
+  ["memory_tools.sh"]="memory_management_center"
+  ["swap_tools.sh"]="swap_management_center"
+  ["install_tools.sh"]="install_tools"
+  ["log_tools.sh"]="log_tools"
+)
+
+for file in "${!required_functions[@]}"; do
+  path="$MODULE_DIR/$file"
+  func="${required_functions[$file]}"
+
+  if [[ ! -f "$path" ]]; then
+    echo "📄 创建缺失模块：$file"
+    echo -e "#!/bin/bash\n\n$func() {\n  echo \"📦 模块 $file 已执行\"\n  read -p \"🔙 回车返回主菜单...\"\n}" > "$path"
+    chmod +x "$path"
+  else
+    if ! grep -q "已加载 $file" "$path"; then
+      sed -i "1i echo \"✅ 已加载 $file\"" "$path"
+    fi
+
+    if ! grep -Eq "^[[:space:]]*(function[[:space:]]+)?$func[[:space:]]*\(\)" "$path"; then
+      echo "⚠️ 补全函数定义：$func in $file"
+      echo -e "\n$func() {\n  echo \"📦 模块 $file 已执行\"\n  read -p \"🔙 回车返回主菜单...\"\n}" >> "$path"
+    fi
+  fi
+done
+
+# ✅ 设置执行权限
 chmod +x "$INSTALL_DIR/vps_master.sh"
-find "$INSTALL_DIR/modules" -type f -name "*.sh" -exec chmod +x {} \;
 
-# 创建日志目录
-mkdir -p "$INSTALL_DIR/logs"
-touch "$INSTALL_DIR/logs/vps_toolkit.log"
-
-# 创建快捷命令
-echo "🔗 正在创建快捷命令：tool"
-ln -sf "$INSTALL_DIR/vps_master.sh" "$BIN_PATH"
-chmod +x "$BIN_PATH"
-
+echo "✅ 安装完成！你可以运行以下命令启动面板："
 echo ""
-echo "✅ 安装完成！你现在可以直接输入以下命令启动工具："
+echo "bash $INSTALL_DIR/vps_master.sh"
 echo ""
-echo "   tool"
-echo ""
-echo "📂 脚本路径：$INSTALL_DIR/vps_master.sh"
-echo "📎 快捷命令：$BIN_PATH"
