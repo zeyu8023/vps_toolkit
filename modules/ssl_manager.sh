@@ -1,4 +1,4 @@
-# Version: 2.3.2
+# Version: 2.3.3
 #!/bin/bash
 echo "✅ 已加载 ssl_manager.sh"
 # 模块：SSL 证书管理中心
@@ -102,8 +102,17 @@ ssl_manager() {
         echo -e "\n📋 当前证书信息："
         for dir in /etc/letsencrypt/live/*; do
           domain=$(basename "$dir")
-          expiry=$(openssl x509 -enddate -noout -in "$dir/fullchain.pem" 2>/dev/null | cut -d= -f2)
-          [[ -n "$expiry" ]] && printf "🌐 %-25s 过期时间: %s\n" "$domain" "$expiry"
+          cert_path="$dir/fullchain.pem"
+          key_path="$dir/privkey.pem"
+          expiry=$(openssl x509 -enddate -noout -in "$cert_path" 2>/dev/null | cut -d= -f2)
+
+          if [[ -n "$expiry" ]]; then
+            echo "────────────────────────────────────────────"
+            echo "🌐 域名：$domain"
+            echo "📅 过期时间：$expiry"
+            echo "🔐 证书路径：$cert_path"
+            echo "🔑 私钥路径：$key_path"
+          fi
         done
         ;;
       0) break ;;
