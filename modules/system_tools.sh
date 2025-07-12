@@ -1,9 +1,17 @@
-# Version: 2.3.0
+# Version: 2.3.1
 #!/bin/bash
 echo "✅ 已加载 system_tools.sh"
 # 模块：系统工具中心
 
-# ✅ 通用依赖检测函数
+LOG_FILE="/opt/vps_toolkit/logs/vps_toolkit.log"
+
+log() {
+  local message="$1"
+  local timestamp
+  timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+  echo "[$timestamp] [system_tools] $message" >> "$LOG_FILE"
+}
+
 ensure_command() {
   local cmd="$1"
   local pkg="$2"
@@ -40,12 +48,14 @@ system_tools() {
         result=$(sudo lsof -i :"$port" | grep LISTEN)
         if [[ -z "$result" ]]; then
           echo "❌ 未发现该端口被监听"
+          log "查询端口占用：$port 未被监听"
         else
           echo "$result"
           pid=$(echo "$result" | awk '{print $2}' | head -n 1)
           read -p "⚠️ 是否终止该进程？(y/n): " confirm
           if [[ "$confirm" == "y" ]]; then
-            sudo kill -9 "$pid" && echo "✅ 已终止进程 PID: $pid" && log "终止端口 $port 占用进程 PID: $pid"
+            sudo kill -9 "$pid" && echo "✅ 已终止进程 PID: $pid"
+            log "终止端口 $port 占用进程 PID: $pid"
           fi
         fi
         ;;
@@ -60,16 +70,19 @@ system_tools() {
           all) sudo netstat -tulnp | grep LISTEN | column -t ;;
           *) echo "❌ 无效协议，请输入 tcp / udp / all" ;;
         esac
+        log "查看监听端口（协议筛选：$proto）"
         ;;
       3)
         echo -e "\n🔥 高资源占用进程（按 CPU 排序）"
         ps aux --sort=-%cpu | head -n 10 | column -t
+        log "查看高资源占用进程"
         ;;
       4)
         ensure_command curl curl
         ensure_command jq jq
         echo -e "\n🌍 公网 IP 与地理位置"
         curl -s ipinfo.io | jq '.ip, .city, .region, .country, .org'
+        log "查看公网 IP 与地理位置"
         ;;
       5)
         ensure_command docker docker.io
@@ -78,20 +91,24 @@ system_tools() {
         sudo rm -rf /var/log/*.log /tmp/*
         docker system prune -a -f
         echo "✅ 清理完成"
+        log "清理系统垃圾完成"
         ;;
       6)
         echo -e "\n💽 磁盘占用排行（按目录）"
         sudo du -h --max-depth=1 / | sort -hr | head -n 10
+        log "查看磁盘占用排行"
         ;;
       7)
         ensure_command netstat net-tools
         echo -e "\n🌐 网络连接数（按 IP）"
         netstat -an | grep ESTABLISHED | awk '{print $5}' | cut -d: -f1 | sort | uniq -c | sort -nr | head
+        log "查看网络连接数（按 IP）"
         ;;
       8)
         echo -e "\n⏱️ 系统运行时间与启动时间"
         uptime -p
         who -b
+        log "查看系统运行时间与启动时间"
         ;;
       9)
         echo -e "\n🔐 登录记录与 SSH 安全"
@@ -99,11 +116,13 @@ system_tools() {
         last -a | head -n 10
         echo -e "\nSSH 登录失败记录："
         grep "Failed password" /var/log/auth.log | tail -n 10
+        log "查看登录记录与 SSH 安全"
         ;;
       10)
         echo -e "\n🧬 系统版本与内核信息"
         lsb_release -a 2>/dev/null || cat /etc/os-release
         uname -r
+        log "查看系统版本与内核信息"
         ;;
       0) break ;;
       *) echo "❌ 无效选项，请重新输入。" ;;
