@@ -1,153 +1,126 @@
-# 🚀 VPS Toolkit
+# 🚀 VPS Toolkit 面板脚本
 
-一个模块化的 VPS 管理工具集，专为自动化、可扩展性和可靠性设计。适用于 VPS 运维、服务部署、网络优化等场景。支持 Docker 管理、系统信息查看、内存管理、环境安装、网络设置，优化等常用任务。
+VPS Toolkit 是一个模块化的 Bash 工具面板，专为 Linux VPS 用户设计，旨在简化服务器管理流程。它集成了系统信息查看、Docker 管理、网络测试、内存与 Swap 管理、环境安装、日志记录等功能，支持图形化菜单操作，适合技术用户快速部署与维护服务器环境。
 
 ---
 
-## 📦 一键安装
+## 🧠 项目亮点
 
+- ✅ **模块化架构**：每个功能独立封装，便于维护与扩展  
+- ✅ **图形化菜单界面**：清晰的编号式菜单，支持键盘交互  
+- ✅ **自动日志记录**：所有操作自动写入日志文件，便于审计  
+- ✅ **Docker Compose 支持**：自动识别项目路径与配置文件  
+- ✅ **网络质量测试集成**：一键运行常用 IP/网络质量检测脚本  
+- ✅ **一键安装环境**：快速部署常用工具与运行环境  
+- ✅ **开源可定制**：脚本结构清晰，便于二次开发与集成
+
+---
+
+## 📦 快速安装
+
+```bash
 bash <(curl -sSL https://raw.githubusercontent.com/zeyu8023/vps_toolkit/main/install.sh)
+```
 
-安装完成后，可使用快捷命令：
+> 自动安装所有模块并创建快捷命令 `tool`
 
+---
+
+## 🛠️ 使用方式
+
+运行主命令：
+
+```bash
 tool
+```
+
+进入图形化菜单界面，按编号选择功能模块。
 
 ---
 
-## 🖥️ 主控制面板预览
+## 📋 主菜单功能一览
 
-╔════════════════════════════════════════════════════╗  
-║         🚀 VPS 管理工具面板  |  By XIAOYU           ║  
-╚════════════════════════════════════════════════════╝  
-📊 内存使用：已用: 892Mi / 总: 960Mi  
-💽 磁盘使用：22% 已用 / 总: 46G  
-⚙️ 系统负载： 0.02, 0.11, 0.10  
-────────────────────────────────────────────────────  
- 1. 查看详细内存信息  
- 2. 查看高内存进程并可选择终止  
- 3. 释放缓存内存  
- 4. 卸载指定程序  
- 5. 设置自动缓存清理任务  
- 6. 查看操作日志  
- 7. 启用 Swap（自定义大小）  
- 8. 删除 Swap  
- 9. 内存分析助手 🧠  
-10. 程序/服务搜索助手 🔍  
-11. 查看系统信息 🖥️  
-12. 一键安装常用环境（可选组件）🧰  
-13. 网络设置中心 🌐  
-14. Docker 管理中心 🐳  
- 0. 退出程序  
-────────────────────────────────────────────────────  
-👉 请输入选项编号:  
+| 编号 | 模块名称 | 功能描述 |
+|------|-----------|-----------|
+| 1 | 系统信息助手 🖥️ | 查看主机信息、CPU、内存、磁盘、服务状态  
+| 2 | 网络设置中心 🌐 | 修改 DNS、测速、清理网络缓存、查看端口  
+| 3 | Docker 管理中心 🐳 | 管理容器、镜像、Compose 项目、日志查看  
+| 4 | 内存管理中心 🧠 | 清理缓存、释放内存、查看内存占用  
+| 5 | Swap 管理中心 💾 | 创建、删除、查看 Swap 分区  
+| 6 | 一键安装环境 🧰 | 安装常用工具如 curl、git、docker、htop  
+| 7 | 常用测试脚本功能 🧪 | IP质量、网络质量、NodeQuality验证  
+| 8 | 操作日志查看 📜 | 查看所有操作记录，支持清空、搜索
 
 ---
 
-## 🧩 模块功能列表
+## 🐳 Docker 管理中心功能详解
 
-模块名称             | 功能描述
-----------------------|------------------------------------------------
-system_info.sh        | 查看系统信息（CPU、内存、磁盘、网络）
-memory_tools.sh       | 内存清理与缓存释放
-swap_tools.sh         | 创建与管理 SWAP 分区
-network_tools.sh      | 网络测速、IP 优化、CloudflareSpeedTest
-docker_tools.sh       | Docker 容器管理中心（支持 Compose）
-install_tools.sh      | 常用软件一键安装（Nginx、Xray 等）
-uninstall_tools.sh    | 软件卸载与清理
-ssl_tools.sh          | SSL 证书申请与自动续签（支持 ACME） *(可选)*
+### 容器列表展示增强
 
----
+- 状态高亮显示（绿色运行中 / 红色已停止）  
+- 自动识别 Compose 项目并标记 🧩  
+- 显示端口映射信息 🔌  
+- 支持分页与编号选择操作
 
-## 🐳 Docker 管理中心界面预览
+### 容器操作支持
 
-🐳 Docker 容器管理中心：
---------------------------------------------
-0) wxchat           —  ddsderek/wxchat:latest           —  Up 2 minutes   —  🔌 80/tcp → 0.0.0.0:8011  
-1) npm-app-1        —  jc21/nginx-proxy-manager:latest  —  Up 14 minutes 🧩 Compose  —  🔌 80/tcp → 0.0.0.0:80, 443/tcp → 0.0.0.0:443  
-2) nezha-dashboard  —  ghcr.io/nezhahq/nezha            —  Up 30 hours   🧩 Compose  —  🔌 443/tcp → 0.0.0.0:443  
---------------------------------------------
-a) 清理无效容器  
-0) 返回主菜单  
-👉 请输入容器编号进行管理（直接回车退出）:
+- 启动 / 停止 / 卸载容器  
+- 自动拉取镜像并更新容器  
+- 保留原配置重新部署容器  
+- 支持通过 Compose 更新项目（自动识别工作目录）
 
----
+### 新建 Docker Compose 项目
 
-## 🛠️ 脚本操作页面预览
+- 输入项目名称后自动创建目录 `/opt/compose/<项目名>`  
+- 提示用户手动编辑 `docker-compose.yml`  
+- 指导使用 `nano` 编辑器：Ctrl+O 保存，Ctrl+X 退出  
+- 检查配置文件是否为空，确认是否启动服务  
+- 自动记录日志并标记项目路径
 
-示例：更新容器
+### 编辑正在运行的 Compose 项目
 
-📦 正在拉取最新镜像：ddsderek/wxchat:latest  
-Status: Image is up to date for ddsderek/wxchat:latest  
-
-🔍 正在提取原容器配置...  
-环境变量：-e TZ=Asia/Shanghai  
-挂载卷：-v /etc/letsencrypt:/etc/letsencrypt  
-端口映射：-p 0.0.0.0:8011:80/tcp  
-
-🛑 停止并删除旧容器...  
-✅ 容器 wxchat 已删除  
-
-🚀 使用原配置重新启动容器...  
-✅ 容器 wxchat 已更新并重启
+- 自动识别运行中的 Compose 项目列表  
+- 提取真实工作目录（`com.docker.compose.project.working_dir`）  
+- 自动识别 `.yml` 或 `.yaml` 配置文件  
+- 支持备份原配置为 `.bak`  
+- 编辑后自动重载服务并记录日志
 
 ---
 
-示例：查看容器日志
+## 🧪 常用测试脚本功能
 
-📜 容器 wxchat 的最近日志：
-[INFO] Starting service...  
-[INFO] Listening on port 8011  
-[INFO] Ready to accept connections
+进入菜单后可选择以下测试：
 
----
+| 编号 | 测试项 | 命令 |
+|------|--------|------|
+| 1 | IP质量测试 | `bash <(curl -sL Check.Place) -I`  
+| 2 | 网络质量检测 | `bash <(curl -sL Check.Place) -N`  
+| 3 | NodeQuality验证 | `bash <(curl -sL https://run.NodeQuality.com)`  
 
-## 📁 项目结构示例
+### 鸣谢脚本作者
 
-vps_toolkit/
-├── install.sh              # 安装入口脚本
-├── vps_master.sh           # 主控制面板
-├── modules/
-│   ├── docker_tools.sh
-│   ├── install_tools.sh
-│   ├── memory_tools.sh
-│   ├── network_tools.sh
-│   ├── swap_tools.sh
-│   ├── system_info.sh
-│   ├── uninstall_tools.sh
-│   └── ssl_tools.sh
-├── logs/
-│   └── vps_toolkit.log
-└── README.md
+- 作者：[@xykt](https://github.com/xykt)  
+- 感谢其提供高质量的网络测试脚本接口！
 
 ---
 
-## 📌 更新日志
+## 📜 日志系统说明
 
-### [v1.2.0] - 2025-07-11
-
-✨ 新增功能：
-- 自动识别 docker-compose 管理容器
-- 支持项目路径标签 `com.docker.compose.project.working_dir`
-- 容器列表显示端口映射（支持 IPv4 / IPv6 / 多端口）
-- 更新容器时保留原配置（环境变量、挂载卷、端口）
-- 更新前配置预览
-- 查看容器日志功能
-- 一键清理无效容器
-
-🛠️ 优化改进：
-- 修复更新后容器端口丢失问题
-- 自动过滤无名称或无镜像的容器
-- 容器列表标记 Compose 管理容器
-- 镜像拉取状态提示更清晰
+- 所有模块调用 `log "操作描述"` 自动记录至 `vps_toolkit.log`  
+- 日志文件路径：`/opt/vps_toolkit/logs/vps_toolkit.log`  
+- 日志格式：`[YYYY-MM-DD HH:MM:SS] 操作内容`  
+- 支持查看最近日志、清空日志、模块化日志管理  
+- 可扩展为远程推送日志到 Telegram、Webhook 等平台
 
 ---
 
-## 🧠 作者 & 贡献
+## 📎 项目地址
 
-由 zeyu8023 构建，欢迎提交 Issue 或 PR 改进功能。
-
+- 主项目主页：[https://github.com/zeyu8023/vps_toolkit](https://github.com/zeyu8023/vps_toolkit)  
+  
 ---
 
-## 🛡️ License
+## 📬 联系与反馈
 
-MIT License
+如有建议、Bug反馈或功能请求，欢迎提交 Issue 或 PR 到 GitHub 项目主页。  
+也欢迎你 Fork 本项目并进行个性化定制，打造属于自己的 VPS 管理工具！
