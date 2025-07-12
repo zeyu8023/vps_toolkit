@@ -1,9 +1,17 @@
 #!/bin/bash
 # 🚀 VPS 管理工具面板 | By XIAOYU
 
-# ✅ 使用固定路径，确保模块加载成功
+# ✅ 固定路径，确保模块加载成功
 SCRIPT_DIR="/opt/vps_toolkit"
 MODULE_DIR="$SCRIPT_DIR/modules"
+LOG_FILE="$SCRIPT_DIR/logs/vps_toolkit.log"
+
+# ✅ 通用日志函数
+log() {
+  local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+  echo "[$timestamp] $*" >> "$LOG_FILE"
+}
+export -f log
 
 # ✅ 模块函数映射表
 declare -A modules=(
@@ -54,7 +62,7 @@ while true; do
   echo " 3. Docker 管理中心 🐳"
   echo " 4. 内存管理中心 🧠"
   echo " 5. Swap 管理中心 💾"
-  echo " 6. 一键安装常用环境（可选组件）🧰"
+  echo " 6. 一键安装常用环境 🧰"
   echo " 7. 查看操作日志 📜"
   echo " 0. 退出程序"
   echo "────────────────────────────────────────────────────"
