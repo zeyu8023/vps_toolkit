@@ -1,7 +1,8 @@
 #!/bin/bash
 # 🚀 VPS 管理工具面板 | By XIAOYU
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# ✅ 使用固定路径，确保模块加载成功
+SCRIPT_DIR="/opt/vps_toolkit"
 MODULE_DIR="$SCRIPT_DIR/modules"
 
 # ✅ 模块函数映射表
