@@ -1,6 +1,16 @@
-# Version: 2.3.0
+# Version: 2.3.1
 #!/bin/bash
+echo "✅ 已加载 swap_tools.sh"
 # 模块：Swap 管理中心 💾
+
+LOG_FILE="/opt/vps_toolkit/logs/vps_toolkit.log"
+
+log() {
+  local message="$1"
+  local timestamp
+  timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+  echo "[$timestamp] [swap_tools] $message" >> "$LOG_FILE"
+}
 
 swap_management_center() {
   while true; do
@@ -26,6 +36,7 @@ swap_management_center() {
           sudo mkswap "$swapfile"
           sudo swapon "$swapfile"
           echo "✅ Swap 已启用：$(free -m | awk '/Swap:/ {print $3 "MiB / " $2 "MiB"}')"
+          log "启用 Swap：${size}MiB"
         else
           echo "❌ 输入无效，请输入数字大小"
         fi
@@ -37,8 +48,10 @@ swap_management_center() {
           sudo swapoff "$swapfile"
           sudo rm -f "$swapfile"
           echo "✅ Swap 已删除"
+          log "删除 Swap 文件：$swapfile"
         else
           echo "🚫 未检测到 /swapfile，无需删除"
+          log "尝试删除 Swap，但未检测到 /swapfile"
         fi
         read -p "🔙 回车返回菜单..." ;;
       0) break ;;
