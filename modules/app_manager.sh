@@ -1,4 +1,4 @@
-# Version: 2.3.1
+# Version: 2.3.2
 #!/bin/bash
 echo "✅ 已加载 app_manager.sh"
 
@@ -125,16 +125,35 @@ app_manager() {
           fi
           printf "%2d) %-12s %-20s [%s]\n" "$((i+1))" "$pkg" "$desc" "$status"
         done
+        echo " a) 安装所有未安装的应用"
         echo " 0) 返回上级菜单"
 
-        read -p "📥 输入编号安装应用: " num
+        read -p "📥 输入编号安装应用（或 a 全部安装）: " input
 
-        if [[ "$num" == "0" ]]; then
+        if [[ "$input" == "0" ]]; then
           echo "↩️ 返回上级菜单"
           break
+        elif [[ "$input" == "a" ]]; then
+          to_install=""
+          for entry in "${common_apps[@]}"; do
+            pkg="${entry%%|*}"
+            if ! dpkg -s "$pkg" &>/dev/null; then
+              to_install+="$pkg "
+            fi
+          done
+
+          if [[ -z "$to_install" ]]; then
+            echo "✅ 所有应用已安装，无需操作"
+          else
+            echo "📦 正在安装：$to_install"
+            sudo apt update && sudo apt install -y $to_install
+            echo "✅ 安装完成"
+            log "安装所有未安装应用：$to_install"
+          fi
+          continue
         fi
 
-        entry="${common_apps[$((num-1))]}"
+        entry="${common_apps[$((input-1))]}"
         app="${entry%%|*}"
 
         if [[ -z "$app" ]]; then
