@@ -1,5 +1,10 @@
 #!/bin/bash
+echo "✅ 已加载 network_tools.sh"
 # 模块：网络设置中心
+
+network_tools() {
+  network_settings_menu
+}
 
 network_settings_menu() {
   while true; do
