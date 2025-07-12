@@ -1,4 +1,5 @@
 #!/bin/bash
+# ✅ 已加载 install_tools.sh
 # 模块：环境安装器
 
 install_environment_menu() {
@@ -157,4 +158,9 @@ prompt_and_install() {
 
   echo "✅ 安装完成！"
   log "安装 $title：$to_install"
+}
+
+# ✅ 添加桥接函数供主菜单调用
+install_tools() {
+  install_environment_menu
 }
