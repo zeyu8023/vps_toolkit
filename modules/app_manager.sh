@@ -1,6 +1,16 @@
-# Version: 2.3.0
+# Version: 2.3.1
 #!/bin/bash
 echo "✅ 已加载 app_manager.sh"
+
+LOG_FILE="/opt/vps_toolkit/logs/vps_toolkit.log"
+
+# ✅ 日志函数
+log() {
+  local message="$1"
+  local timestamp
+  timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+  echo "[$timestamp] [app_manager] $message" >> "$LOG_FILE"
+}
 
 # 分类定义
 declare -A categories=(
@@ -24,9 +34,19 @@ app_actions() {
     read -p "👉 请输入编号: " sub
 
     case "$sub" in
-      1) sudo apt update && sudo apt upgrade "$pkg" -y && log "更新应用：$pkg" ;;
-      2) sudo apt remove "$pkg" -y && log "卸载应用：$pkg" ;;
-      3) journalctl -u "$pkg" --no-pager | tail -n 30 ;;
+      1)
+        sudo apt update && sudo apt upgrade "$pkg" -y \
+          && echo "✅ 已更新：$pkg" \
+          && log "✅ 更新应用：$pkg"
+        ;;
+      2)
+        sudo apt remove "$pkg" -y \
+          && echo "✅ 已卸载：$pkg" \
+          && log "✅ 卸载应用：$pkg"
+        ;;
+      3)
+        journalctl -u "$pkg" --no-pager | tail -n 30
+        ;;
       0) break ;;
       *) echo "❌ 无效选项，请重新输入。" ;;
     esac
@@ -65,64 +85,69 @@ app_manager() {
         ;;
       2)
         echo "🔄 正在更新所有应用..."
-        sudo apt update && sudo apt upgrade -y && log "更新全部应用"
+        sudo apt update && sudo apt upgrade -y \
+          && echo "✅ 所有应用已更新" \
+          && log "✅ 更新全部应用"
         ;;
       3)
-  echo -e "\n📦 常用应用安装（状态检测 + 中文描述）"
+        echo -e "\n📦 常用应用安装（状态检测 + 中文描述）"
 
-  common_apps=(
-    "unzip|解压 zip 文件"
-    "curl|发送网络请求"
-    "wget|下载文件"
-    "git|版本控制工具"
-    "vim|高级文本编辑器"
-    "nano|简洁文本编辑器"
-    "htop|进程监控工具"
-    "net-tools|经典网络命令集"
-    "iproute2|现代网络命令集"
-    "nmap|端口扫描工具"
-    "tcpdump|抓包分析工具"
-    "traceroute|路由追踪工具"
-    "iperf3|网络带宽测试"
-    "ufw|防火墙管理工具"
-    "screen|后台任务保持工具"
-    "tmux|终端多窗口管理"
-    "python3|Python 运行环境"
-    "gcc|C语言编译器"
-    "make|构建工具"
-  )
+        common_apps=(
+          "unzip|解压 zip 文件"
+          "curl|发送网络请求"
+          "wget|下载文件"
+          "git|版本控制工具"
+          "vim|高级文本编辑器"
+          "nano|简洁文本编辑器"
+          "htop|进程监控工具"
+          "net-tools|经典网络命令集"
+          "iproute2|现代网络命令集"
+          "nmap|端口扫描工具"
+          "tcpdump|抓包分析工具"
+          "traceroute|路由追踪工具"
+          "iperf3|网络带宽测试"
+          "ufw|防火墙管理工具"
+          "screen|后台任务保持工具"
+          "tmux|终端多窗口管理"
+          "python3|Python 运行环境"
+          "gcc|C语言编译器"
+          "make|构建工具"
+        )
 
-  for i in "${!common_apps[@]}"; do
-    entry="${common_apps[$i]}"
-    pkg="${entry%%|*}"
-    desc="${entry##*|}"
-    if dpkg -s "$pkg" &>/dev/null; then
-      status="✅ 已安装"
-    else
-      status="❌ 未安装"
-    fi
-    printf "%2d) %-12s %-20s [%s]\n" "$((i+1))" "$pkg" "$desc" "$status"
-  done
-  echo " 0) 返回上级菜单"
+        for i in "${!common_apps[@]}"; do
+          entry="${common_apps[$i]}"
+          pkg="${entry%%|*}"
+          desc="${entry##*|}"
+          if dpkg -s "$pkg" &>/dev/null; then
+            status="✅ 已安装"
+          else
+            status="❌ 未安装"
+          fi
+          printf "%2d) %-12s %-20s [%s]\n" "$((i+1))" "$pkg" "$desc" "$status"
+        done
+        echo " 0) 返回上级菜单"
 
-  read -p "📥 输入编号安装应用: " num
+        read -p "📥 输入编号安装应用: " num
 
-  if [[ "$num" == "0" ]]; then
-    echo "↩️ 返回上级菜单"
-    break
-  fi
+        if [[ "$num" == "0" ]]; then
+          echo "↩️ 返回上级菜单"
+          break
+        fi
 
-  entry="${common_apps[$((num-1))]}"
-  app="${entry%%|*}"
+        entry="${common_apps[$((num-1))]}"
+        app="${entry%%|*}"
 
-  if [[ -z "$app" ]]; then
-    echo "❌ 无效编号，请重新输入。"
-  elif dpkg -s "$app" &>/dev/null; then
-    echo "ℹ️ $app 已安装，无需重复安装。"
-  else
-    sudo apt install "$app" -y && log "安装常用应用：$app"
-  fi
-  ;;
+        if [[ -z "$app" ]]; then
+          echo "❌ 无效编号，请重新输入。"
+        elif dpkg -s "$app" &>/dev/null; then
+          echo "ℹ️ $app 已安装，无需重复安装。"
+          log "ℹ️ 跳过安装（已存在）：$app"
+        else
+          sudo apt install "$app" -y \
+            && echo "✅ 已安装：$app" \
+            && log "✅ 安装常用应用：$app"
+        fi
+        ;;
       0) break ;;
       *) echo "❌ 无效选项，请重新输入。" ;;
     esac
