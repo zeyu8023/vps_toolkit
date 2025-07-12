@@ -6,37 +6,66 @@ echo "✅ 已加载 update_center.sh"
 REPO_BASE="https://raw.githubusercontent.com/zeyu8023/vps_toolkit/main/modules"
 LOCAL_DIR="/opt/vps_toolkit/modules"
 
+# ✅ 提取模块版本号
+get_version() {
+  local file="$1"
+  grep "^# Version:" "$file" 2>/dev/null | cut -d: -f2 | xargs
+}
+
+# ✅ 获取远程模块版本号
+get_remote_version() {
+  local name="$1"
+  curl -fsSL "$REPO_BASE/$name" 2>/dev/null | grep "^# Version:" | cut -d: -f2 | xargs
+}
+
 update_center() {
   while true; do
     echo -e "\n🔄 模块更新中心"
     echo "────────────────────────────────────────────"
     echo " 1) 查看当前模块版本"
-    echo " 2) 更新所有模块"
-    echo " 3) 更新指定模块"
+    echo " 2) 检查远程更新（版本对比）"
+    echo " 3) 更新所有模块"
+    echo " 4) 更新指定模块"
     echo " 0) 返回主菜单"
     echo "────────────────────────────────────────────"
     read -p "👉 请输入编号: " choice
 
     case "$choice" in
       1)
-        echo -e "\n📋 当前模块版本信息（需模块顶部包含 # Version:）："
+        echo -e "\n📋 当前模块版本信息："
         for file in "$LOCAL_DIR"/*.sh; do
           name=$(basename "$file")
-          version=$(grep "^# Version:" "$file" | cut -d: -f2 | xargs)
+          version=$(get_version "$file")
           [[ -z "$version" ]] && version="未标注"
           printf "%-25s 版本: %s\n" "$name" "$version"
         done
         ;;
       2)
+        echo -e "\n🔍 正在检查远程更新..."
+        for file in "$LOCAL_DIR"/*.sh; do
+          name=$(basename "$file")
+          local_ver=$(get_version "$file")
+          remote_ver=$(get_remote_version "$name")
+          [[ -z "$local_ver" ]] && local_ver="未标注"
+          [[ -z "$remote_ver" ]] && remote_ver="无法获取"
+          if [[ "$local_ver" != "$remote_ver" ]]; then
+            printf "📦 %-20s 本地: %-10s 远程: %-10s  👉 可更新\n" "$name" "$local_ver" "$remote_ver"
+          else
+            printf "✅ %-20s 已是最新版本 (%s)\n" "$name" "$local_ver"
+          fi
+        done
+        ;;
+      3)
         echo -e "\n📥 正在更新所有模块..."
         for file in "$LOCAL_DIR"/*.sh; do
           name=$(basename "$file")
           curl -fsSL "$REPO_BASE/$name" -o "$file" \
             && echo "✅ 已更新：$name" \
+            && source "$file" \
             || echo "❌ 更新失败：$name"
         done
         ;;
-      3)
+      4)
         echo -e "\n📦 可更新模块列表："
         ls "$LOCAL_DIR"/*.sh | sed 's|.*/||' | nl
         read -p "📥 输入模块编号进行更新: " num
@@ -44,6 +73,7 @@ update_center() {
         if [[ -n "$selected" ]]; then
           curl -fsSL "$REPO_BASE/$selected" -o "$LOCAL_DIR/$selected" \
             && echo "✅ 已更新：$selected" \
+            && source "$LOCAL_DIR/$selected" \
             || echo "❌ 更新失败：$selected"
         else
           echo "❌ 无效编号"
