@@ -1,8 +1,27 @@
 #!/bin/bash
 echo "✅ 已加载 docker_tools.sh"
-# 模块：Docker 容器管理中心
+# 模块：Docker 管理中心
 
 docker_management_center() {
+  while true; do
+    echo -e "\n🐳 Docker 管理中心"
+    echo "────────────────────────────────────────────"
+    echo " 1) 镜像与容器管理"
+    echo " 2) 新建 Docker Compose 项目"
+    echo " 0) 返回主菜单"
+    echo "────────────────────────────────────────────"
+    read -p "👉 请输入编号: " choice
+
+    case "$choice" in
+      1) docker_container_menu ;;
+      2) create_compose_project ;;
+      0) break ;;
+      *) echo "❌ 无效选项，请重新输入。" ;;
+    esac
+  done
+}
+
+docker_container_menu() {
   while true; do
     echo -e "\n🐳 Docker 容器管理中心："
     echo "--------------------------------------------"
@@ -13,11 +32,12 @@ docker_management_center() {
       [[ -n "$image" ]] && containers+=("$cid|$name|$image|$status")
     done < <(docker ps -a --format "{{.ID}}|{{.Names}}|{{.Image}}|{{.Status}}")
 
-    if [[ ${#containers[@]} -eq 0 ]]; then
+    total=${#containers[@]}
+    if [[ $total -eq 0 ]]; then
       echo "⚠️ 当前没有有效容器"
       echo "--------------------------------------------"
       echo " a) 清理无效容器"
-      echo " r) 返回主菜单"
+      echo " r) 返回上一级"
       read -p "👉 请输入操作选项: " empty_choice
       case "$empty_choice" in
         a) docker container prune -f && echo "✅ 已清理无效容器" ;;
@@ -27,30 +47,39 @@ docker_management_center() {
       continue
     fi
 
+    echo "📦 当前容器数量：$total"
     echo "操作菜单："
     echo " a) 清理无效容器"
-    echo " r) 返回主菜单"
+    echo " r) 返回上一级"
     echo "--------------------------------------------"
 
-    for ((i=1; i<=${#containers[@]}; i++)); do
+    for ((i=1; i<=total; i++)); do
       IFS='|' read -r cid name image status <<< "${containers[$((i-1))]}"
       compose_flag=""
       compose_project=$(docker inspect "$cid" --format '{{ index .Config.Labels "com.docker.compose.project" }}' 2>/dev/null)
       [[ -n "$compose_project" ]] && compose_flag="🧩 Compose"
+
       ports=$(docker port "$cid" 2>/dev/null | awk '{print $1 " → " $3}' | paste -sd ", " -)
-      echo "$i) $name  —  $image  —  $status $compose_flag  —  🔌 $ports"
+
+      if [[ "$status" == *"Up"* ]]; then
+        status_display="\033[1;32m运行中\033[0m"
+      else
+        status_display="\033[1;31m已停止\033[0m"
+      fi
+
+      printf "%2d) %-20s %-20s %-10b %-10s 🔌 %s\n" "$i" "$name" "$image" "$status_display" "$compose_flag" "$ports"
     done
 
     echo "--------------------------------------------"
     read -p "👉 请输入容器编号或操作选项（直接回车退出）: " index
-    [[ -z "$index" ]] && echo "🚪 已退出 Docker 管理中心" && break
+    [[ -z "$index" ]] && echo "🚪 已退出容器管理中心" && break
 
     if [[ "$index" == "a" ]]; then
       docker container prune -f && echo "✅ 已清理无效容器"
       continue
     elif [[ "$index" == "r" ]]; then
       break
-    elif ! [[ "$index" =~ ^[0-9]+$ ]] || (( index < 1 || index > ${#containers[@]} )); then
+    elif ! [[ "$index" =~ ^[0-9]+$ ]] || (( index < 1 || index > total )); then
       echo "❌ 无效编号"
       continue
     fi
@@ -64,6 +93,7 @@ docker_management_center() {
     echo " 3) 卸载容器"
     echo " 4) 更新容器（自动识别 compose）"
     echo " 5) 查看容器日志"
+    echo " 6) 实时日志跟踪"
     echo " 0) 返回容器列表"
     read -p "👉 请输入操作编号: " action
 
@@ -117,8 +147,39 @@ docker_management_center() {
         fi
         ;;
       5) echo -e "\n📜 容器 $name 的最近日志：" && docker logs --tail 50 "$cid" ;;
+      6) echo -e "\n📡 实时日志跟踪（按 Ctrl+C 退出）：" && docker logs -f "$cid" ;;
       0) continue ;;
       *) echo "❌ 无效操作编号" ;;
     esac
   done
+}
+
+create_compose_project() {
+  echo -e "\n🧩 新建 Docker Compose 项目"
+  read -p "请输入项目名称（如 myapp）: " project
+  [[ -z "$project" ]] && echo "❌ 项目名称不能为空" && return
+
+  dir="/opt/compose/$project"
+  mkdir -p "$dir"
+
+  cat > "$dir/docker-compose.yml" <<EOF
+version: '3'
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+    volumes:
+      - ./html:/usr/share/nginx/html
+EOF
+
+  mkdir -p "$dir/html"
+  echo "<h1>Hello from $project</h1>" > "$dir/html/index.html"
+
+  echo "📁 项目已创建在：$dir"
+  echo "📦 正在启动服务..."
+  cd "$dir" && docker-compose up -d
+
+  echo "✅ 项目 [$project] 已启动"
+  log "新建 Docker Compose 项目：$project"
 }
