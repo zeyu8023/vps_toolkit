@@ -23,6 +23,77 @@ docker_management_center() {
   done
 }
 
+create_compose_project() {
+  echo -e "\n🧩 新建 Docker Compose 项目"
+  read -p "请输入项目名称（如 myapp）: " project
+  [[ -z "$project" ]] && echo "❌ 项目名称不能为空" && return
+
+  dir="/opt/compose/$project"
+  mkdir -p "$dir"
+  yml="$dir/docker-compose.yml"
+
+  touch "$yml"
+  echo "📁 项目目录已创建：$dir"
+  echo "📄 请编辑 docker-compose.yml 配置文件"
+  nano "$yml"
+
+  if [[ ! -s "$yml" ]]; then
+    echo "⚠️ 配置文件为空，已取消启动"
+    return
+  fi
+
+  read -p "是否立即启动该项目？(y/N): " confirm
+  if [[ "$confirm" =~ ^[Yy]$ ]]; then
+    cd "$dir" && docker-compose up -d
+    echo "✅ 项目 [$project] 已启动"
+    log "新建并启动 Compose 项目：$project"
+  else
+    echo "🚫 已创建但未启动项目 [$project]"
+    log "新建 Compose 项目（未启动）：$project"
+  fi
+}
+
+edit_compose_project() {
+  echo -e "\n🛠️ 编辑 Docker Compose 项目"
+
+  projects=($(docker ps --format '{{.ID}}' | xargs -n1 docker inspect --format '{{ index .Config.Labels "com.docker.compose.project" }}' 2>/dev/null | sort -u | grep -v '^$'))
+
+  if [[ ${#projects[@]} -eq 0 ]]; then
+    echo "⚠️ 当前没有运行中的 Compose 项目"
+    return
+  fi
+
+  echo "📦 当前运行中的 Compose 项目："
+  for i in "${!projects[@]}"; do
+    echo " $((i+1))) ${projects[$i]}"
+  done
+
+  read -p "👉 请输入项目编号: " index
+  (( index < 1 || index > ${#projects[@]} )) && echo "❌ 无效编号" && return
+
+  project="${projects[$((index-1))]}"
+  cid=$(docker ps --filter "label=com.docker.compose.project=$project" -q | head -n1)
+  compose_dir=$(docker inspect "$cid" --format '{{ index .Config.Labels "com.docker.compose.project.working_dir" }}' 2>/dev/null)
+
+  if [[ -z "$compose_dir" || ! -f "$compose_dir/docker-compose.yml" ]]; then
+    echo "❌ 未找到配置文件：$compose_dir/docker-compose.yml"
+    return
+  fi
+
+  yml="$compose_dir/docker-compose.yml"
+  echo "📄 当前配置文件路径：$yml"
+  read -p "是否编辑该文件？(y/N): " confirm
+  [[ "$confirm" =~ ^[Yy]$ ]] || return
+
+  cp "$yml" "$yml.bak"
+  nano "$yml"
+
+  echo "🔄 正在重载服务..."
+  cd "$compose_dir" && docker-compose up -d
+  echo "✅ 项目 [$project] 已更新"
+  log "编辑并重载 Compose 项目：$project"
+}
+
 docker_container_menu() {
   while true; do
     echo -e "\n🐳 Docker 容器管理中心："
@@ -154,74 +225,4 @@ docker_container_menu() {
       *) echo "❌ 无效操作编号" ;;
     esac
   done
-}
-
-create_compose_project() {
-  echo -e "\n🧩 新建 Docker Compose 项目"
-  read -p "请输入项目名称（如 myapp）: " project
-  [[ -z "$project" ]] && echo "❌ 项目名称不能为空" && return
-
-  dir="/opt/compose/$project"
-  mkdir -p "$dir"
-  yml="$dir/docker-compose.yml"
-
-  touch "$yml"
-  echo "📁 项目目录已创建：$dir"
-  echo "📄 请编辑 docker-compose.yml 配置文件"
-  nano "$yml"
-
-  if [[ ! -s "$yml" ]]; then
-    echo "⚠️ 配置文件为空，已取消启动"
-    return
-  fi
-
-  read -p "是否立即启动该项目？(y/N): " confirm
-  if [[ "$confirm" =~ ^[Yy]$ ]]; then
-    cd "$dir" && docker-compose up -d
-    echo "✅ 项目 [$project] 已启动"
-    log "新建并启动 Compose 项目：$project"
-  else
-    echo "🚫 已创建但未启动项目 [$project]"
-    log "新建 Compose 项目（未启动）：$project"
-  fi
-}
-
-edit_compose_project() {
-  echo -e "\n🛠️ 编辑 Docker Compose 项目"
-
-  projects=($(docker ps --format '{{.ID}}' | xargs -n1 docker inspect --format '{{ index .Config.Labels "com.docker.compose.project" }}' 2>/dev/null | sort -u | grep -v '^$'))
-
-  if [[ ${#projects[@]} -eq 0 ]]; then
-    echo "⚠️ 当前没有运行中的 Compose 项目"
-    return
-  fi
-
-  echo "📦 当前运行中的 Compose 项目："
-  for i in "${!projects[@]}"; do
-    echo " $((i+1))) ${projects[$i]}"
-  done
-
-  read -p "👉 请输入项目编号: " index
-  (( index < 1 || index > ${#projects[@]} )) && echo "❌ 无效编号" && return
-
-  project="${projects[$((index-1))]}"
-  compose_dir="/opt/compose/$project"
-  yml="$compose_dir/docker-compose.yml"
-
-  if [[ ! -f "$yml" ]]; then
-    echo "❌ 未找到配置文件：$yml"
-    return
-  fi
-
-  echo "📄 当前配置文件路径：$yml"
-  read -p "是否编辑该文件？(y/N): " confirm
-  [[ "$confirm" =~ ^[Yy]$ ]] || return
-
-  cp "$yml" "$yml.bak"
-  nano "$yml"
-
-  echo "🔄 正在重载服务..."
-  cd "$compose_dir" && docker-compose up -d
-  echo "✅ 项目 [$project] 已更新"
-  log "编辑并重载 Compose 项目：$project"
 }
