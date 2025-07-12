@@ -4,11 +4,23 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODULE_DIR="$SCRIPT_DIR/modules"
 
-load_module() {
-  local file="$1"
-  local func="$2"
-  if [[ -f "$MODULE_DIR/$file" ]]; then
-    source "$MODULE_DIR/$file"
+# ✅ 模块函数映射表
+declare -A modules=(
+  [1]="system_info.sh:system_info"
+  [2]="network_tools.sh:network_tools"
+  [3]="docker_tools.sh:docker_management_center"
+  [4]="memory_tools.sh:memory_management_center"
+  [5]="swap_tools.sh:swap_management_center"
+  [6]="install_tools.sh:install_tools"
+  [7]="log_tools.sh:log_tools"
+)
+
+# ✅ 加载所有模块并验证函数
+for key in "${!modules[@]}"; do
+  IFS=":" read -r file func <<< "${modules[$key]}"
+  path="$MODULE_DIR/$file"
+  if [[ -f "$path" ]]; then
+    source "$path"
     if ! declare -F "$func" >/dev/null; then
       echo "❌ 模块 $file 加载失败：未定义函数 $func"
       exit 1
@@ -17,17 +29,9 @@ load_module() {
     echo "❌ 模块文件缺失：$file"
     exit 1
   fi
-}
+done
 
-# ✅ 加载所有模块
-load_module "system_info.sh" "system_info"
-load_module "network_tools.sh" "network_tools"
-load_module "docker_tools.sh" "docker_management_center"
-load_module "memory_tools.sh" "memory_management_center"
-load_module "swap_tools.sh" "swap_management_center"
-load_module "install_tools.sh" "install_tools"
-load_module "log_tools.sh" "log_tools"
-
+# ✅ 主菜单循环
 while true; do
   clear
   echo "╔════════════════════════════════════════════════════╗"
@@ -55,15 +59,12 @@ while true; do
   echo "────────────────────────────────────────────────────"
   read -p "👉 请输入选项编号: " choice
 
-  case "$choice" in
-    1) system_info ;;
-    2) network_tools ;;
-    3) docker_management_center ;;
-    4) memory_management_center ;;
-    5) swap_management_center ;;
-    6) install_tools ;;
-    7) log_tools ;;
-    0) echo "👋 再见！" && exit 0 ;;
-    *) echo "❌ 无效选项，请重新输入。" && sleep 1 ;;
-  esac
+  if [[ "$choice" == "0" ]]; then
+    echo "👋 再见！" && exit 0
+  elif [[ -n "${modules[$choice]}" ]]; then
+    IFS=":" read -r _ func <<< "${modules[$choice]}"
+    "$func"
+  else
+    echo "❌ 无效选项，请重新输入。" && sleep 1
+  fi
 done
