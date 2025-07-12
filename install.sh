@@ -1,10 +1,14 @@
 #!/bin/bash
-# 🚀 VPS Toolkit 安装脚本 | 自动拉取所有模块文件
+# 🚀 VPS Toolkit 安装脚本 | 自动清理旧版本
 
 INSTALL_DIR="/opt/vps_toolkit"
 MODULE_DIR="$INSTALL_DIR/modules"
 LOG_DIR="$INSTALL_DIR/logs"
 REPO="zeyu8023/vps_toolkit"
+
+echo "🧹 正在清理旧版本..."
+rm -rf "$INSTALL_DIR"
+rm -f /usr/local/bin/tool
 
 echo "📦 正在安装 VPS Toolkit 到 $INSTALL_DIR..."
 mkdir -p "$MODULE_DIR" "$LOG_DIR"
@@ -28,7 +32,6 @@ chmod +x "$MODULE_DIR"/*.sh
 touch "$LOG_DIR/vps_toolkit.log"
 
 # ✅ 创建快速启动命令
-rm -f /usr/local/bin/tool
 ln -s "$INSTALL_DIR/vps_master.sh" /usr/local/bin/tool
 chmod +x /usr/local/bin/tool
 
