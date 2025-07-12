@@ -1,7 +1,16 @@
-# Version: 2.3.0
+# Version: 2.3.1
 #!/bin/bash
-# ✅ 已加载 install_tools.sh
+echo "✅ 已加载 install_tools.sh"
 # 模块：环境安装器
+
+LOG_FILE="/opt/vps_toolkit/logs/vps_toolkit.log"
+
+log() {
+  local message="$1"
+  local timestamp
+  timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+  echo "[$timestamp] [install_tools] $message" >> "$LOG_FILE"
+}
 
 install_environment_menu() {
   while true; do
@@ -100,7 +109,8 @@ install_docker_tools() {
   prompt_and_install "Docker 环境" map
   if [[ "$to_install" == *"docker.io"* ]]; then
     echo -e "\n🔧 正在启动并设置 Docker 开机自启..."
-    systemctl enable docker && systemctl start docker
+    systemctl enable docker && systemctl start docker \
+      && log "启动并设置 Docker 开机自启"
   fi
 }
 
