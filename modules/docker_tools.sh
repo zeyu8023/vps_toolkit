@@ -84,12 +84,21 @@ edit_compose_project() {
   cid=$(docker ps --filter "label=com.docker.compose.project=$project" -q | head -n1)
   compose_dir=$(docker inspect "$cid" --format '{{ index .Config.Labels "com.docker.compose.project.working_dir" }}' 2>/dev/null)
 
-  if [[ -z "$compose_dir" || ! -f "$compose_dir/docker-compose.yml" ]]; then
-    echo "❌ 未找到配置文件：$compose_dir/docker-compose.yml"
+  if [[ -z "$compose_dir" ]]; then
+    echo "❌ 未找到工作目录标签"
     return
   fi
 
-  yml="$compose_dir/docker-compose.yml"
+  # ✅ 自动识别配置文件名
+  if [[ -f "$compose_dir/docker-compose.yml" ]]; then
+    yml="$compose_dir/docker-compose.yml"
+  elif [[ -f "$compose_dir/docker-compose.yaml" ]]; then
+    yml="$compose_dir/docker-compose.yaml"
+  else
+    echo "❌ 未找到配置文件：$compose_dir/docker-compose.yml 或 .yaml"
+    return
+  fi
+
   echo "📄 当前配置文件路径：$yml"
   read -p "是否编辑该文件？(y/N): " confirm
   [[ "$confirm" =~ ^[Yy]$ ]] || return
