@@ -1,6 +1,5 @@
 #!/bin/bash
 echo "✅ 已加载 system_info.sh"
-# 模块：系统信息与搜索助手
 
 system_info() {
   while true; do
