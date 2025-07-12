@@ -1,3 +1,4 @@
+# Version: 2.3.0
 #!/bin/bash
 echo "✅ 已加载 app_manager.sh"
 
