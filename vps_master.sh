@@ -23,6 +23,7 @@ declare -A modules=(
   [7]="install_tools.sh:install_tools"
   [8]="test_tools.sh:test_tools"
   [9]="log_tools.sh:log_tools"
+  [10]="system_tools.sh:system_tools"
 )
 
 # ✅ 加载所有模块
@@ -75,14 +76,15 @@ while true; do
   # 📋 菜单项
   printf "${YELLOW}%s${RESET}\n" "$(printf '─%.0s' $(seq 1 $((width+2))))"
   printf "${YELLOW} 1.${RESET} 查看系统信息 🖥️\n"
-  printf "${YELLOW} 2.${RESET} 网络设置中心 🌐\n"
-  printf "${YELLOW} 3.${RESET} Docker 管理中心 🐳\n"
-  printf "${YELLOW} 4.${RESET} 应用管理中心 📦\n"
-  printf "${YELLOW} 5.${RESET} 内存管理中心 🧠\n"
-  printf "${YELLOW} 6.${RESET} Swap 管理中心 💾\n"
+  printf "${YELLOW} 2.${RESET} 网络设置 🌐\n"
+  printf "${YELLOW} 3.${RESET} Docker 管理 🐳\n"
+  printf "${YELLOW} 4.${RESET} 应用管理 📦\n"
+  printf "${YELLOW} 5.${RESET} 内存管理 🧠\n"
+  printf "${YELLOW} 6.${RESET} Swap 管理 💾\n"
   printf "${YELLOW} 7.${RESET} 一键安装常用环境 🧰\n"
   printf "${YELLOW} 8.${RESET} 常用测试脚本功能 🧪\n"
   printf "${YELLOW} 9.${RESET} 查看操作日志 📜\n"
+  printf "${YELLOW}10.${RESET} 系统常用工具 🛠️\n"
   printf "${YELLOW} 0.${RESET} 退出程序\n"
   printf "${YELLOW}%s${RESET}\n" "$(printf '─%.0s' $(seq 1 $((width+2))))"
 
