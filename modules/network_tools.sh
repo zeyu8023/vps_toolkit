@@ -1,7 +1,16 @@
-# Version: 2.3.0
+# Version: 2.3.1
 #!/bin/bash
 echo "✅ 已加载 network_tools.sh"
 # 模块：网络设置中心
+
+LOG_FILE="/opt/vps_toolkit/logs/vps_toolkit.log"
+
+log() {
+  local message="$1"
+  local timestamp
+  timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+  echo "[$timestamp] [network_tools] $message" >> "$LOG_FILE"
+}
 
 network_tools() {
   network_settings_menu
@@ -66,12 +75,14 @@ set_static_ip() {
   ip addr add "$ipaddr" dev "$iface"
   ip route add default via "$gateway"
   echo "✅ 静态 IP 设置完成（临时生效）"
+  log "设置静态 IP：$iface → $ipaddr via $gateway"
 }
 
 configure_dns() {
   read -p "请输入 DNS 服务器地址（如 8.8.8.8）: " dns
   echo "nameserver $dns" > /etc/resolv.conf
   echo "✅ DNS 已设置为 $dns"
+  log "配置 DNS：$dns"
 }
 
 edit_hosts() {
@@ -79,7 +90,10 @@ edit_hosts() {
   cat /etc/hosts
   echo "--------------------------------------------"
   read -p "是否编辑 hosts 文件？(y/N): " confirm
-  [[ "$confirm" == "y" || "$confirm" == "Y" ]] && nano /etc/hosts
+  if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+    nano /etc/hosts
+    log "编辑 /etc/hosts 文件"
+  fi
 }
 
 toggle_ipv6() {
@@ -87,9 +101,11 @@ toggle_ipv6() {
   if [[ "$status" == "1" ]]; then
     sysctl -w net.ipv6.conf.all.disable_ipv6=0
     echo "✅ IPv6 已启用"
+    log "启用 IPv6"
   else
     sysctl -w net.ipv6.conf.all.disable_ipv6=1
     echo "🚫 IPv6 已禁用"
+    log "禁用 IPv6"
   fi
 }
 
@@ -110,16 +126,25 @@ manage_warp() {
       mv warp-go /usr/local/bin/
       chmod +x /usr/local/bin/warp-go
       echo "✅ warp-go 安装完成"
+      log "安装 warp-go"
       ;;
     2)
       nohup warp-go > /dev/null 2>&1 &
       echo "✅ WARP 已启动"
+      log "启动 WARP"
       ;;
     3)
       pkill warp-go && echo "🚫 WARP 已停止"
+      log "停止 WARP"
       ;;
     4)
-      pgrep warp-go >/dev/null && echo "✅ WARP 正在运行" || echo "🚫 WARP 未运行"
+      if pgrep warp-go >/dev/null; then
+        echo "✅ WARP 正在运行"
+        log "查看 WARP 状态：运行中"
+      else
+        echo "🚫 WARP 未运行"
+        log "查看 WARP 状态：未运行"
+      fi
       ;;
     0) ;;
     *) echo "❌ 无效选择" ;;
