@@ -8,6 +8,7 @@ docker_management_center() {
     echo "────────────────────────────────────────────"
     echo " 1) 镜像与容器管理"
     echo " 2) 新建 Docker Compose 项目"
+    echo " 3) 编辑正在运行的 Compose 项目"
     echo " 0) 返回主菜单"
     echo "────────────────────────────────────────────"
     read -p "👉 请输入编号: " choice
@@ -15,6 +16,7 @@ docker_management_center() {
     case "$choice" in
       1) docker_container_menu ;;
       2) create_compose_project ;;
+      3) edit_compose_project ;;
       0) break ;;
       *) echo "❌ 无效选项，请重新输入。" ;;
     esac
@@ -161,25 +163,65 @@ create_compose_project() {
 
   dir="/opt/compose/$project"
   mkdir -p "$dir"
+  yml="$dir/docker-compose.yml"
 
-  cat > "$dir/docker-compose.yml" <<EOF
-version: '3'
-services:
-  web:
-    image: nginx:latest
-    ports:
-      - "8080:80"
-    volumes:
-      - ./html:/usr/share/nginx/html
-EOF
+  touch "$yml"
+  echo "📁 项目目录已创建：$dir"
+  echo "📄 请编辑 docker-compose.yml 配置文件"
+  nano "$yml"
 
-  mkdir -p "$dir/html"
-  echo "<h1>Hello from $project</h1>" > "$dir/html/index.html"
+  if [[ ! -s "$yml" ]]; then
+    echo "⚠️ 配置文件为空，已取消启动"
+    return
+  fi
 
-  echo "📁 项目已创建在：$dir"
-  echo "📦 正在启动服务..."
-  cd "$dir" && docker-compose up -d
+  read -p "是否立即启动该项目？(y/N): " confirm
+  if [[ "$confirm" =~ ^[Yy]$ ]]; then
+    cd "$dir" && docker-compose up -d
+    echo "✅ 项目 [$project] 已启动"
+    log "新建并启动 Compose 项目：$project"
+  else
+    echo "🚫 已创建但未启动项目 [$project]"
+    log "新建 Compose 项目（未启动）：$project"
+  fi
+}
 
-  echo "✅ 项目 [$project] 已启动"
-  log "新建 Docker Compose 项目：$project"
+edit_compose_project() {
+  echo -e "\n🛠️ 编辑 Docker Compose 项目"
+
+  projects=($(docker ps --format '{{.ID}}' | xargs -n1 docker inspect --format '{{ index .Config.Labels "com.docker.compose.project" }}' 2>/dev/null | sort -u | grep -v '^$'))
+
+  if [[ ${#projects[@]} -eq 0 ]]; then
+    echo "⚠️ 当前没有运行中的 Compose 项目"
+    return
+  fi
+
+  echo "📦 当前运行中的 Compose 项目："
+  for i in "${!projects[@]}"; do
+    echo " $((i+1))) ${projects[$i]}"
+  done
+
+  read -p "👉 请输入项目编号: " index
+  (( index < 1 || index > ${#projects[@]} )) && echo "❌ 无效编号" && return
+
+  project="${projects[$((index-1))]}"
+  compose_dir="/opt/compose/$project"
+  yml="$compose_dir/docker-compose.yml"
+
+  if [[ ! -f "$yml" ]]; then
+    echo "❌ 未找到配置文件：$yml"
+    return
+  fi
+
+  echo "📄 当前配置文件路径：$yml"
+  read -p "是否编辑该文件？(y/N): " confirm
+  [[ "$confirm" =~ ^[Yy]$ ]] || return
+
+  cp "$yml" "$yml.bak"
+  nano "$yml"
+
+  echo "🔄 正在重载服务..."
+  cd "$compose_dir" && docker-compose up -d
+  echo "✅ 项目 [$project] 已更新"
+  log "编辑并重载 Compose 项目：$project"
 }
