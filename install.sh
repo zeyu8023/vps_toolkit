@@ -20,8 +20,12 @@ done
 chmod +x "$INSTALL_DIR/vps_master.sh"
 chmod +x "$MODULE_DIR"/*.sh
 
+# ✅ 初始化日志文件
+touch "$LOG_DIR/vps_toolkit.log"
+
 # ✅ 创建快速启动命令
-ln -sf "$INSTALL_DIR/vps_master.sh" /usr/local/bin/tool
+rm -f /usr/local/bin/tool
+ln -s "$INSTALL_DIR/vps_master.sh" /usr/local/bin/tool
 chmod +x /usr/local/bin/tool
 
 echo "✅ 安装完成！你可以使用以下命令启动面板："
