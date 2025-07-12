@@ -1,4 +1,5 @@
 #!/bin/bash
+echo "✅ 已加载 docker_tools.sh"
 # 模块：Docker 容器管理中心
 
 docker_management_center() {
