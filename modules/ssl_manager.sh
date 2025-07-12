@@ -1,9 +1,17 @@
-# Version: 2.3.3
+# Version: 2.3.4
 #!/bin/bash
 echo "✅ 已加载 ssl_manager.sh"
 # 模块：SSL 证书管理中心
 
-# ✅ 通用依赖检测函数
+LOG_FILE="/opt/vps_toolkit/logs/vps_toolkit.log"
+
+log() {
+  local message="$1"
+  local timestamp
+  timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+  echo "[$timestamp] [ssl_manager] $message" >> "$LOG_FILE"
+}
+
 ensure_command() {
   local cmd="$1"
   local pkg="$2"
@@ -33,7 +41,6 @@ ssl_manager() {
       1)
         read -p "🌐 输入要申请证书的域名: " domain
 
-        # ✅ 检查端口 80 是否被占用
         echo "🔍 正在检查端口 80 是否被占用..."
         port_check=$(sudo lsof -i :80 | grep LISTEN)
         killed_service=""
@@ -45,7 +52,6 @@ ssl_manager() {
           exe=$(readlink -f "/proc/$pid/exe" 2>/dev/null)
           service_name=""
 
-          # ✅ 尝试识别服务名
           if [[ "$exe" == *nginx* ]]; then
             service_name="nginx"
           elif [[ "$exe" == *apache2* ]]; then
@@ -55,6 +61,7 @@ ssl_manager() {
           read -p "🛑 是否终止占用端口的进程 PID: $pid？(y/n): " confirm
           if [[ "$confirm" == "y" ]]; then
             sudo kill -9 "$pid" && echo "✅ 已终止进程 PID: $pid"
+            log "终止占用端口 80 的进程 PID: $pid"
             killed_service="$service_name"
           else
             echo "❌ 已取消申请证书"
@@ -64,39 +71,48 @@ ssl_manager() {
           echo "✅ 端口 80 未被占用"
         fi
 
-        # ✅ 执行证书申请（无邮箱）
         echo "📥 正在申请证书（使用 standalone 模式，无邮箱）..."
         if sudo certbot certonly --standalone \
           --register-unsafely-without-email \
           --agree-tos \
           -d "$domain"; then
           echo "✅ 证书申请成功"
+          log "成功申请证书：$domain"
 
-          # ✅ 提示是否恢复服务
           if [[ -n "$killed_service" ]]; then
             read -p "🔄 是否恢复被终止的服务 $killed_service？(y/n): " restart_confirm
             if [[ "$restart_confirm" == "y" ]]; then
               sudo systemctl restart "$killed_service" \
                 && echo "✅ 已恢复服务：$killed_service" \
+                && log "恢复服务：$killed_service" \
                 || echo "❌ 恢复失败，请手动检查"
             fi
           fi
         else
           echo "❌ 证书申请失败"
+          log "证书申请失败：$domain"
         fi
         ;;
       2)
         echo "🔄 正在续签所有证书..."
-        sudo certbot renew \
-          && echo "✅ 续签完成" \
-          || echo "❌ 续签失败"
+        if sudo certbot renew; then
+          echo "✅ 续签完成"
+          log "续签所有证书成功"
+        else
+          echo "❌ 续签失败"
+          log "续签所有证书失败"
+        fi
         ;;
       3)
         read -p "🗑️ 输入要吊销的域名: " domain
         echo "⚠️ 正在吊销证书..."
-        sudo certbot revoke --cert-path "/etc/letsencrypt/live/$domain/fullchain.pem" \
-          && echo "✅ 已吊销证书" \
-          || echo "❌ 吊销失败"
+        if sudo certbot revoke --cert-path "/etc/letsencrypt/live/$domain/fullchain.pem"; then
+          echo "✅ 已吊销证书"
+          log "吊销证书：$domain"
+        else
+          echo "❌ 吊销失败"
+          log "吊销证书失败：$domain"
+        fi
         ;;
       4)
         echo -e "\n📋 当前证书信息："
@@ -112,6 +128,7 @@ ssl_manager() {
             echo "📅 过期时间：$expiry"
             echo "🔐 证书路径：$cert_path"
             echo "🔑 私钥路径：$key_path"
+            log "查看证书信息：$domain 有效期至 $expiry"
           fi
         done
         ;;
