@@ -1,4 +1,4 @@
-# Version: 2.3.1
+# Version: 2.3.2
 #!/bin/bash
 echo "✅ 已加载 memory_tools.sh"
 # 模块：内存管理中心 🧠
@@ -35,7 +35,8 @@ memory_management_center() {
         read -p "🔙 回车返回菜单..." ;;
       2)
         echo "📋 高内存进程列表（前20）："
-        ps aux --sort=-%mem | awk 'NR<=20{printf "%-10s %-6s %-6s %-6s %-s\n", $1, $2, $3, $4, $11}'
+        echo -e "USER       PID     MEM(MiB)  COMMAND"
+        ps -eo user,pid,rss,comm --sort=-rss | awk 'NR==1{next} NR<=21 {printf "%-10s %-6s %-9.1f %-s\n", $1, $2, $3/1024, $4}'
         read -p "⚠️ 输入要终止的 PID（或回车跳过）: " pid
         if [[ -n "$pid" ]]; then
           kill -9 "$pid" && echo "✅ 已终止进程 $pid" && log "终止高内存进程 PID: $pid"
