@@ -225,8 +225,47 @@ docker_container_menu() {
           echo "🚫 已取消删除"
         fi
         ;;
-      4) # 保持原更新逻辑不变
-        # ...
+      4)
+        echo "📦 正在拉取最新镜像：$image"
+        docker pull "$image"
+
+        compose_project=$(docker inspect "$cid" --format '{{ index .Config.Labels "com.docker.compose.project" }}' 2>/dev/null)
+
+        if [[ -n "$compose_project" ]]; then
+          echo "📦 检测到 docker-compose 管理容器 [$compose_project]"
+          compose_dir=$(docker inspect "$cid" --format '{{ index .Config.Labels "com.docker.compose.project.working_dir" }}' 2>/dev/null)
+          [[ -z "$compose_dir" ]] && compose_dir="/opt/compose/$compose_project"
+
+          if [[ -f "$compose_dir/docker-compose.yml" ]]; then
+            echo "📁 切换到 compose 目录：$compose_dir"
+            cd "$compose_dir"
+            docker-compose pull
+            docker-compose up -d
+            echo "✅ 已通过 docker-compose 更新容器 [$name]"
+            log "更新容器（compose）：$name 使用镜像 $image"
+          else
+            echo "❌ 未找到 docker-compose.yml，请检查路径：$compose_dir"
+          fi
+        else
+          echo "🔍 正在提取原容器配置..."
+          envs=$(docker inspect "$cid" --format '{{range .Config.Env}}-e {{.}} {{end}}' 2>/dev/null)
+          vols=$(docker inspect "$cid" --format '{{range .HostConfig.Binds}}-v {{.}} {{end}}' 2>/dev/null)
+          ports=$(docker inspect "$cid" --format '{{range $p, $conf := .HostConfig.PortBindings}}{{range $i, $v := $conf}}-p {{$v.HostIp}}:{{$v.HostPort}}:{{$p}} {{end}}{{end}}' 2>/dev/null)
+
+          echo "📝 配置预览："
+          echo "环境变量：$envs"
+          echo "挂载卷：$vols"
+          echo "端口映射：$ports"
+          log "更新容器前配置备份：$name | $envs $vols $ports"
+
+          echo "🛑 停止并删除旧容器..."
+          docker stop "$cid" && docker rm "$cid"
+
+          echo "🚀 使用原配置重新启动容器..."
+          docker run -d --name "$name" $envs $vols $ports "$image"
+          echo "✅ 容器 $name 已更新并重启"
+          log "更新容器：$name 使用镜像 $image（保留原配置）"
+        fi
         ;;
       5) docker logs --tail 50 "$cid" ;;
       6) docker logs -f "$cid" ;;
