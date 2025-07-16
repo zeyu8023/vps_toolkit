@@ -1,4 +1,4 @@
-# Version: 2.3.8.1
+# Version: 2.3.9
 #!/bin/bash
 echo "✅ 已加载 test_tools.sh"
 # 模块：常用测试脚本功能 🧪
@@ -159,14 +159,17 @@ manage_custom_scripts() {
   fi
 
   echo "📂 有效脚本列表："
-  for i in "${!valid_lines[@]}"; do
-    name="${valid_lines[$i]%%|*}"
-    echo " $((i+1))) $name"
-  done
+for i in "${!valid_lines[@]}"; do
+  name="${valid_lines[$i]%%|*}"
+  echo " $((i+1))) $name"
+done
+echo " 0) 返回上一级"
 
-  read -p "👉 请输入要管理的脚本编号: " num
-  index=$((num-1))
-  [[ -z "${valid_lines[$index]}" ]] && echo "❌ 无效编号" && return
+read -p "👉 请输入要管理的脚本编号（输入 0 返回）: " num
+[[ "$num" == "0" ]] && return
+
+index=$((num-1))
+[[ -z "${valid_lines[$index]}" ]] && echo "❌ 无效编号" && return
 
   name="${valid_lines[$index]%%|*}"
   cmd="${valid_lines[$index]#*|}"
