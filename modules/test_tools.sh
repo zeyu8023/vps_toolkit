@@ -1,4 +1,4 @@
-# Version: 2.3.9
+# Version: 2.3.9.1
 #!/bin/bash
 echo "✅ 已加载 test_tools.sh"
 # 模块：常用测试脚本功能 🧪
@@ -111,30 +111,33 @@ add_custom_script() {
 
 run_custom_scripts() {
   echo -e "\n📂 脚本收藏夹列表："
-  mapfile -t lines < "$SCRIPT_LIST"
+mapfile -t lines < "$SCRIPT_LIST"
 
-  if [[ ${#lines[@]} -eq 0 ]]; then
-    echo "⚠️ 当前没有收藏的脚本"
-    return
-  fi
+if [[ ${#lines[@]} -eq 0 ]]; then
+  echo "⚠️ 当前没有收藏的脚本"
+  return
+fi
 
-  for i in "${!lines[@]}"; do
-    [[ "${lines[$i]}" != *"|"* ]] && continue
-    name="${lines[$i]%%|*}"
-    echo " $((i+1))) $name"
-  done
+for i in "${!lines[@]}"; do
+  [[ "${lines[$i]}" != *"|"* ]] && continue
+  name="${lines[$i]%%|*}"
+  echo " $((i+1))) $name"
+done
+echo " 0) 返回上一级"
 
-  read -p "👉 请输入要运行的脚本编号: " num
-  index=$((num-1))
-  cmd="${lines[$index]#*|}"
+read -p "👉 请输入要运行的脚本编号（输入 0 返回）: " num
+[[ "$num" == "0" ]] && return
 
-  if [[ -n "$cmd" ]]; then
-    echo "🚀 正在运行：${lines[$index]%%|*}"
-    eval "$cmd"
-    log "运行收藏夹脚本：${lines[$index]%%|*}"
-  else
-    echo "❌ 无效编号或命令为空"
-  fi
+index=$((num-1))
+cmd="${lines[$index]#*|}"
+
+if [[ -n "$cmd" ]]; then
+  echo "🚀 正在运行：${lines[$index]%%|*}"
+  eval "$cmd"
+  log "运行收藏夹脚本：${lines[$index]%%|*}"
+else
+  echo "❌ 无效编号或命令为空"
+fi
 }
 
 manage_custom_scripts() {
