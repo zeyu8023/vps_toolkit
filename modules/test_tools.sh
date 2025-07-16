@@ -1,10 +1,11 @@
-# Version: 2.3.5
+# Version: 2.3.6
 #!/bin/bash
 echo "✅ 已加载 test_tools.sh"
 # 模块：常用测试脚本功能 🧪
 
 LOG_FILE="/opt/vps_toolkit/logs/vps_toolkit.log"
 SCRIPT_LIST="/opt/vps_toolkit/config/test_scripts.list"
+TOKEN_FILE="/opt/vps_toolkit/config/github_token.txt"
 
 mkdir -p /opt/vps_toolkit/config
 touch "$SCRIPT_LIST"
@@ -14,6 +15,27 @@ log() {
   local timestamp
   timestamp=$(date "+%Y-%m-%d %H:%M:%S")
   echo "[$timestamp] [test_tools] $message" >> "$LOG_FILE"
+}
+
+get_saved_token() {
+  [[ -f "$TOKEN_FILE" ]] && cat "$TOKEN_FILE"
+}
+
+save_token() {
+  local token="$1"
+  echo "$token" > "$TOKEN_FILE"
+  chmod 600 "$TOKEN_FILE"
+  echo "✅ Token 已保存，下次将自动使用"
+}
+
+update_token() {
+  read -p "🔑 输入新的 GitHub Token（classic，gist 权限）: " new_token
+  [[ -n "$new_token" ]] && save_token "$new_token"
+}
+
+clear_token() {
+  rm -f "$TOKEN_FILE"
+  echo "🧹 已清除保存的 Token"
 }
 
 add_custom_script() {
@@ -125,10 +147,22 @@ manage_custom_scripts() {
 
 upload_to_gist() {
   echo -e "\n☁️ 上传脚本收藏夹到 GitHub Gist"
-  read -p "🔑 输入你的 GitHub Token（classic，gist 权限）: " token
-  [[ -z "$token" ]] && echo "❌ Token 不能为空" && return
+  token=$(get_saved_token)
+
+  if [[ -z "$token" ]]; then
+    read -p "🔑 输入你的 GitHub Token（classic，gist 权限）: " token
+    [[ -z "$token" ]] && echo "❌ Token 不能为空" && return
+    save_token "$token"
+  else
+    echo "🔐 已使用保存的 Token"
+  fi
 
   content=$(<"$SCRIPT_LIST")
+  if [[ -z "$content" ]]; then
+    echo "⚠️ 脚本收藏夹为空，无法上传"
+    return
+  fi
+
   payload=$(jq -n --arg content "$content" '{
     description: "VPS Toolkit Script Backup",
     public: false,
@@ -137,16 +171,18 @@ upload_to_gist() {
     }
   }')
 
-  response=$(curl -s -X POST -H "Authorization: token '"$token"'" \
+  response=$(curl -s -X POST https://api.github.com/gists \
+    -H "Authorization: token '"$token"'" \
     -H "Content-Type: application/json" \
-    -d "$payload" https://api.github.com/gists)
+    -d "$payload")
 
   url=$(echo "$response" | jq -r '.html_url')
   if [[ "$url" != "null" ]]; then
     echo "✅ 已上传到 Gist：$url"
     log "上传脚本收藏到 Gist：$url"
   else
-    echo "❌ 上传失败，请检查 Token 或网络"
+    echo "❌ 上传失败，响应内容如下："
+    echo "$response"
   fi
 }
 
@@ -180,6 +216,8 @@ test_tools() {
     echo " 6) 管理脚本收藏夹"
     echo " 7) 上传脚本收藏夹到 GitHub Gist ☁️"
     echo " 8) 从 Gist 恢复脚本收藏夹 🔄"
+    echo " 9) 更新 GitHub Token 🔑"
+    echo "10) 清除保存的 Token 🧹"
     echo " 0) 返回主菜单"
     echo "────────────────────────────────────────────"
     echo "🙏 鸣谢脚本作者：@xykt"
@@ -208,6 +246,8 @@ test_tools() {
       6) manage_custom_scripts ;;
       7) upload_to_gist ;;
       8) restore_from_gist ;;
+      9) update_token ;;
+     10) clear_token ;;
       0) break ;;
       *) echo "❌ 无效选项，请重新输入。" ;;
     esac
