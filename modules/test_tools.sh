@@ -1,4 +1,4 @@
-# Version: 2.3.6
+# Version: 2.3.8
 #!/bin/bash
 echo "✅ 已加载 test_tools.sh"
 # 模块：常用测试脚本功能 🧪
@@ -29,13 +29,70 @@ save_token() {
 }
 
 update_token() {
-  read -p "🔑 输入新的 GitHub Token（classic，gist 权限）: " new_token
+  read -p "🔑 输入新的 GitHub Token（classic，repo 权限）: " new_token
   [[ -n "$new_token" ]] && save_token "$new_token"
 }
 
 clear_token() {
   rm -f "$TOKEN_FILE"
   echo "🧹 已清除保存的 Token"
+}
+
+submit_to_public_repo() {
+  echo -e "\n🚀 提交脚本收藏夹到公共仓库（vps-toolkit-scripts）"
+  read -p "👤 你的 GitHub 用户名: " username
+  token=$(get_saved_token)
+
+  if [[ -z "$token" ]]; then
+    read -p "🔑 输入你的 GitHub Token（classic，repo 权限）: " token
+    [[ -z "$token" ]] && echo "❌ Token 不能为空" && return
+    save_token "$token"
+  else
+    echo "🔐 已使用保存的 Token"
+  fi
+
+  if [[ ! -f "$SCRIPT_LIST" ]]; then
+    echo "❌ 脚本列表不存在：$SCRIPT_LIST"
+    return
+  fi
+
+  TMP_DIR=$(mktemp -d)
+  REPO_URL="https://github.com/xiaoyu/vps-toolkit-scripts.git"
+  cd "$TMP_DIR" || return
+  git init
+  git config user.name "$username"
+  git config user.email "$username@users.noreply.github.com"
+  git remote add origin "$REPO_URL"
+
+  echo "📥 正在拉取远程仓库..."
+  git pull origin master &>/dev/null
+
+  mkdir -p "$username"
+  cp "$SCRIPT_LIST" "$username/test_scripts.list"
+
+  git add .
+  git commit -m "提交脚本收藏夹：$username"
+  git push "https://$username:$token@github.com/xiaoyu/vps-toolkit-scripts.git" master
+
+  echo "✅ 已提交到公共仓库：https://github.com/xiaoyu/vps-toolkit-scripts/tree/master/$username"
+  log "提交脚本收藏夹到公共仓库：$username"
+}
+
+restore_from_public_repo() {
+  echo -e "\n🔄 从公共仓库恢复脚本收藏夹"
+  read -p "👤 请输入你的 GitHub 用户名: " username
+
+  url="https://raw.githubusercontent.com/xiaoyu/vps-toolkit-scripts/master/$username/test_scripts.list"
+  echo "🌐 正在拉取：$url"
+
+  content=$(curl -s "$url")
+  if [[ -n "$content" && "$content" == *"|"* ]]; then
+    echo "$content" > "$SCRIPT_LIST"
+    echo "✅ 已恢复脚本收藏夹到：$SCRIPT_LIST"
+    log "从公共仓库恢复脚本：$username"
+  else
+    echo "❌ 恢复失败，可能用户名错误或文件不存在"
+  fi
 }
 
 add_custom_script() {
@@ -145,65 +202,6 @@ manage_custom_scripts() {
   log "管理脚本：$name（操作编号 $action）"
 }
 
-upload_to_gist() {
-  echo -e "\n☁️ 上传脚本收藏夹到 GitHub Gist"
-  token=$(get_saved_token)
-
-  if [[ -z "$token" ]]; then
-    read -p "🔑 输入你的 GitHub Token（classic，gist 权限）: " token
-    [[ -z "$token" ]] && echo "❌ Token 不能为空" && return
-    save_token "$token"
-  else
-    echo "🔐 已使用保存的 Token"
-  fi
-
-  content=$(<"$SCRIPT_LIST")
-  if [[ -z "$content" ]]; then
-    echo "⚠️ 脚本收藏夹为空，无法上传"
-    return
-  fi
-
-  payload=$(jq -n --arg content "$content" '{
-    description: "VPS Toolkit Script Backup",
-    public: false,
-    files: {
-      "test_scripts.list": { "content": $content }
-    }
-  }')
-
-  response=$(curl -s -X POST https://api.github.com/gists \
-    -H "Authorization: token '"$token"'" \
-    -H "Content-Type: application/json" \
-    -d "$payload")
-
-  url=$(echo "$response" | jq -r '.html_url')
-  if [[ "$url" != "null" ]]; then
-    echo "✅ 已上传到 Gist：$url"
-    log "上传脚本收藏到 Gist：$url"
-  else
-    echo "❌ 上传失败，响应内容如下："
-    echo "$response"
-  fi
-}
-
-restore_from_gist() {
-  echo -e "\n🔄 从 GitHub Gist 恢复脚本收藏夹"
-  read -p "🔗 输入 Gist ID 或完整 URL: " gist_input
-  [[ -z "$gist_input" ]] && echo "❌ 输入不能为空" && return
-
-  gist_id=$(echo "$gist_input" | sed 's|.*gist.github.com/||;s|/.*||')
-  raw_url="https://gist.githubusercontent.com/$gist_id/raw"
-
-  content=$(curl -s "$raw_url")
-  if [[ -n "$content" ]]; then
-    echo "$content" > "$SCRIPT_LIST"
-    echo "✅ 已恢复脚本收藏夹"
-    log "从 Gist 恢复脚本收藏夹：$gist_id"
-  else
-    echo "❌ 恢复失败，请检查 Gist ID 或网络"
-  fi
-}
-
 test_tools() {
   while true; do
     echo -e "\n🧪 常用测试脚本功能"
@@ -214,10 +212,10 @@ test_tools() {
     echo " 4) 添加自定义测试脚本"
     echo " 5) 运行收藏夹脚本"
     echo " 6) 管理脚本收藏夹"
-    echo " 7) 上传脚本收藏夹到 GitHub Gist ☁️"
-    echo " 8) 从 Gist 恢复脚本收藏夹 🔄"
-    echo " 9) 更新 GitHub Token 🔑"
-    echo "10) 清除保存的 Token 🧹"
+    echo " 7) 更新 GitHub Token 🔑"
+    echo " 8) 清除保存的 Token 🧹"
+    echo " 9) 提交脚本到公共仓库 🚀"
+    echo "10) 从公共仓库恢复脚本 🔄"
     echo " 0) 返回主菜单"
     echo "────────────────────────────────────────────"
     echo "🙏 鸣谢脚本作者：@xykt"
@@ -226,28 +224,16 @@ test_tools() {
     read -p "👉 请输入编号: " choice
 
     case "$choice" in
-      1)
-        echo "🚀 正在运行 IP质量测试..."
-        bash <(curl -sL Check.Place) -I
-        log "运行 IP质量测试脚本"
-        ;;
-      2)
-        echo "🚀 正在运行 网络质量检测..."
-        bash <(curl -sL Check.Place) -N
-        log "运行 网络质量检测脚本"
-        ;;
-      3)
-        echo "🚀 正在运行 NodeQuality验证测试..."
-        bash <(curl -sL https://run.NodeQuality.com)
-        log "运行 NodeQuality验证测试脚本"
-        ;;
+      1) bash <(curl -sL Check.Place) -I; log "运行 IP质量测试脚本" ;;
+      2) bash <(curl -sL Check.Place) -N; log "运行 网络质量检测脚本" ;;
+      3) bash <(curl -sL https://run.NodeQuality.com); log "运行 NodeQuality验证测试脚本" ;;
       4) add_custom_script ;;
       5) run_custom_scripts ;;
       6) manage_custom_scripts ;;
-      7) upload_to_gist ;;
-      8) restore_from_gist ;;
-      9) update_token ;;
-     10) clear_token ;;
+      7) update_token ;;
+      8) clear_token ;;
+      9) submit_to_public_repo ;;
+     10) restore_from_public_repo ;;
       0) break ;;
       *) echo "❌ 无效选项，请重新输入。" ;;
     esac
