@@ -57,7 +57,7 @@ submit_to_public_repo() {
   fi
 
   TMP_DIR=$(mktemp -d)
-  REPO_URL="https://github.com/xiaoyu/vps-toolkit-scripts.git"
+  REPO_URL="https://github.com/zeyu8023/vps-toolkit-scripts.git"
   cd "$TMP_DIR" || return
   git init
   git config user.name "$username"
@@ -72,9 +72,9 @@ submit_to_public_repo() {
 
   git add .
   git commit -m "提交脚本收藏夹：$username"
-  git push "https://$username:$token@github.com/xiaoyu/vps-toolkit-scripts.git" master
+  git push "https://$username:$token@github.com/zeyu8023/vps-toolkit-scripts.git" master
 
-  echo "✅ 已提交到公共仓库：https://github.com/xiaoyu/vps-toolkit-scripts/tree/master/$username"
+  echo "✅ 已提交到公共仓库：https://github.com/zeyu8023/vps-toolkit-scripts/tree/master/$username"
   log "提交脚本收藏夹到公共仓库：$username"
 }
 
@@ -82,7 +82,7 @@ restore_from_public_repo() {
   echo -e "\n🔄 从公共仓库恢复脚本收藏夹"
   read -p "👤 请输入你的 GitHub 用户名: " username
 
-  url="https://raw.githubusercontent.com/xiaoyu/vps-toolkit-scripts/master/$username/test_scripts.list"
+  url="https://raw.githubusercontent.com/zeyu8023/vps-toolkit-scripts/master/$username/test_scripts.list"
   echo "🌐 正在拉取：$url"
 
   content=$(curl -s "$url")
