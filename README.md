@@ -118,6 +118,82 @@ tool
 - 支持查看当前版本、远程版本、更新指定模块  
 - 支持版本对比与自动加载更新后的模块
 
+---
+
+## ☁️ 脚本收藏夹备份机制（多用户支持）
+
+VPS Toolkit 支持将你的脚本收藏夹备份到公共 GitHub 仓库 [`vps-toolkit-scripts`](https://github.com/zeyu8023/vps-toolkit-scripts)，并支持从该仓库恢复脚本。
+
+每个用户的脚本列表将存储在：
+
+```
+<GitHub用户名>/test_scripts.list
+```
+
+例如：
+
+- `zeyu8023/test_scripts.list`
+- `userA/test_scripts.list`
+
+---
+
+## 🚀 提交脚本收藏夹
+
+在 VPS Toolkit 面板中选择：
+
+```
+9) 提交脚本到公共仓库 🚀
+```
+
+首次提交时会提示输入 GitHub Token（classic 类型，需 `repo` 权限），脚本将自动提交到仓库对应路径。
+
+---
+
+## 🔄 恢复脚本收藏夹
+
+在 VPS Toolkit 面板中选择：
+
+```
+10) 从公共仓库恢复脚本 🔄
+```
+
+输入你的 GitHub 用户名后，脚本将自动拉取：
+
+```
+https://raw.githubusercontent.com/zeyu8023/vps-toolkit-scripts/master/<你的用户名>/test_scripts.list
+```
+
+并恢复到本地配置文件 `/opt/vps_toolkit/config/test_scripts.list`
+
+---
+
+## 🔐 如何获取 GitHub Token
+
+1. 登录 GitHub：[https://github.com](https://github.com)
+2. 打开 Token 页面：[https://github.com/settings/tokens](https://github.com/settings/tokens)
+3. 点击 `Generate new token (classic)`
+4. 设置名称、有效期，并勾选权限：
+   - ✅ `repo`
+5. 生成后复制 `ghp_...` 开头的 Token，粘贴到工具中
+
+⚠️ 注意：Token 只显示一次，请妥善保存！
+
+---
+
+## 📁 当前已提交用户（示例）
+
+- [`zeyu8023/test_scripts.list`](https://github.com/zeyu8023/vps-toolkit-scripts/blob/master/zeyu8023/test_scripts.list)
+- [`userA/test_scripts.list`](https://github.com/zeyu8023/vps-toolkit-scripts/blob/master/userA/test_scripts.list)
+
+你可以在仓库中浏览每个用户的脚本列表。
+
+---
+
+## 🤝 欢迎加入脚本共享计划
+
+你可以提交自己的脚本收藏夹，与其他用户共享常用工具与测试命令。  
+也可以恢复他人的脚本列表，快速获取实用脚本合集。
+
 ## 📎 项目地址
 
 - GitHub 项目主页：https://github.com/zeyu8023/vps_toolkit
