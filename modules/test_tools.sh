@@ -1,4 +1,4 @@
-# Version: 2.3.3
+# Version: 2.3.4
 #!/bin/bash
 echo "✅ 已加载 test_tools.sh"
 # 模块：常用测试脚本功能 🧪
@@ -109,6 +109,51 @@ manage_custom_scripts() {
   log "管理脚本：$name（操作编号 $action）"
 }
 
+upload_to_gist() {
+  echo -e "\n☁️ 上传脚本收藏夹到 GitHub Gist"
+  read -p "🔑 输入你的 GitHub Token（gist 权限）: " token
+  [[ -z "$token" ]] && echo "❌ Token 不能为空" && return
+
+  content=$(<"$SCRIPT_LIST")
+  payload=$(jq -n --arg content "$content" '{
+    description: "VPS Toolkit Script Backup",
+    public: false,
+    files: {
+      "test_scripts.list": { "content": $content }
+    }
+  }')
+
+  response=$(curl -s -X POST -H "Authorization: token $token" \
+    -H "Content-Type: application/json" \
+    -d "$payload" https://api.github.com/gists)
+
+  url=$(echo "$response" | jq -r '.html_url')
+  if [[ "$url" != "null" ]]; then
+    echo "✅ 已上传到 Gist：$url"
+    log "上传脚本收藏到 Gist：$url"
+  else
+    echo "❌ 上传失败，请检查 Token 或网络"
+  fi
+}
+
+restore_from_gist() {
+  echo -e "\n🔄 从 GitHub Gist 恢复脚本收藏夹"
+  read -p "🔗 输入 Gist ID 或完整 URL: " gist_input
+  [[ -z "$gist_input" ]] && echo "❌ 输入不能为空" && return
+
+  gist_id=$(echo "$gist_input" | sed 's|.*gist.github.com/||;s|/.*||')
+  raw_url="https://gist.githubusercontent.com/$gist_id/raw"
+
+  content=$(curl -s "$raw_url")
+  if [[ -n "$content" ]]; then
+    echo "$content" > "$SCRIPT_LIST"
+    echo "✅ 已恢复脚本收藏夹"
+    log "从 Gist 恢复脚本收藏夹：$gist_id"
+  else
+    echo "❌ 恢复失败，请检查 Gist ID 或网络"
+  fi
+}
+
 test_tools() {
   while true; do
     echo -e "\n🧪 常用测试脚本功能"
@@ -119,6 +164,8 @@ test_tools() {
     echo " 4) 添加自定义测试脚本"
     echo " 5) 运行收藏夹脚本"
     echo " 6) 管理脚本收藏夹"
+    echo " 7) 上传脚本收藏夹到 GitHub Gist ☁️"
+    echo " 8) 从 Gist 恢复脚本收藏夹 🔄"
     echo " 0) 返回主菜单"
     echo "────────────────────────────────────────────"
     echo "🙏 鸣谢脚本作者：@xykt"
@@ -145,6 +192,8 @@ test_tools() {
       4) add_custom_script ;;
       5) run_custom_scripts ;;
       6) manage_custom_scripts ;;
+      7) upload_to_gist ;;
+      8) restore_from_gist ;;
       0) break ;;
       *) echo "❌ 无效选项，请重新输入。" ;;
     esac
