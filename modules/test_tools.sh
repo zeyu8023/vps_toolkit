@@ -1,4 +1,4 @@
-# Version: 2.3.4
+# Version: 2.3.5
 #!/bin/bash
 echo "✅ 已加载 test_tools.sh"
 # 模块：常用测试脚本功能 🧪
@@ -40,6 +40,7 @@ run_custom_scripts() {
   fi
 
   for i in "${!lines[@]}"; do
+    [[ "${lines[$i]}" != *"|"* ]] && continue
     name="${lines[$i]%%|*}"
     echo " $((i+1))) $name"
   done
@@ -59,24 +60,37 @@ run_custom_scripts() {
 
 manage_custom_scripts() {
   echo -e "\n🛠️ 管理脚本收藏夹"
-  mapfile -t lines < "$SCRIPT_LIST"
+  mapfile -t raw_lines < "$SCRIPT_LIST"
 
-  if [[ ${#lines[@]} -eq 0 ]]; then
-    echo "⚠️ 当前没有收藏的脚本"
+  valid_lines=()
+  invalid_lines=()
+
+  for line in "${raw_lines[@]}"; do
+    if [[ "$line" == *"|"* ]]; then
+      valid_lines+=("$line")
+    else
+      invalid_lines+=("$line")
+    fi
+  done
+
+  if [[ ${#valid_lines[@]} -eq 0 ]]; then
+    echo "⚠️ 当前没有有效格式的脚本收藏记录"
+    [[ ${#invalid_lines[@]} -gt 0 ]] && echo "❌ 以下行格式错误，请手动修复：" && printf " - %s\n" "${invalid_lines[@]}"
     return
   fi
 
-  for i in "${!lines[@]}"; do
-    name="${lines[$i]%%|*}"
+  echo "📂 有效脚本列表："
+  for i in "${!valid_lines[@]}"; do
+    name="${valid_lines[$i]%%|*}"
     echo " $((i+1))) $name"
   done
 
   read -p "👉 请输入要管理的脚本编号: " num
   index=$((num-1))
-  [[ -z "${lines[$index]}" ]] && echo "❌ 无效编号" && return
+  [[ -z "${valid_lines[$index]}" ]] && echo "❌ 无效编号" && return
 
-  name="${lines[$index]%%|*}"
-  cmd="${lines[$index]#*|}"
+  name="${valid_lines[$index]%%|*}"
+  cmd="${valid_lines[$index]#*|}"
 
   echo -e "\n📝 当前脚本：$name"
   echo "🔗 当前命令：$cmd"
@@ -91,27 +105,27 @@ manage_custom_scripts() {
   case "$action" in
     1)
       read -p "✏️ 输入新名称: " new_name
-      [[ -n "$new_name" ]] && lines[$index]="$new_name|$cmd" && echo "✅ 名称已更新为：$new_name"
+      [[ -n "$new_name" ]] && valid_lines[$index]="$new_name|$cmd" && echo "✅ 名称已更新为：$new_name"
       ;;
     2)
       read -p "🔧 输入新命令: " new_cmd
-      [[ -n "$new_cmd" ]] && lines[$index]="$name|$new_cmd" && echo "✅ 命令已更新"
+      [[ -n "$new_cmd" ]] && valid_lines[$index]="$name|$new_cmd" && echo "✅ 命令已更新"
       ;;
     3)
-      unset 'lines[$index]'
+      unset 'valid_lines[$index]'
       echo "✅ 已删除脚本：$name"
       ;;
     0) return ;;
     *) echo "❌ 无效操作编号" ;;
   esac
 
-  printf "%s\n" "${lines[@]}" > "$SCRIPT_LIST"
+  printf "%s\n" "${valid_lines[@]}" > "$SCRIPT_LIST"
   log "管理脚本：$name（操作编号 $action）"
 }
 
 upload_to_gist() {
   echo -e "\n☁️ 上传脚本收藏夹到 GitHub Gist"
-  read -p "🔑 输入你的 GitHub Token（gist 权限）: " token
+  read -p "🔑 输入你的 GitHub Token（classic，gist 权限）: " token
   [[ -z "$token" ]] && echo "❌ Token 不能为空" && return
 
   content=$(<"$SCRIPT_LIST")
@@ -123,7 +137,7 @@ upload_to_gist() {
     }
   }')
 
-  response=$(curl -s -X POST -H "Authorization: token $token" \
+  response=$(curl -s -X POST -H "Authorization: token '"$token"'" \
     -H "Content-Type: application/json" \
     -d "$payload" https://api.github.com/gists)
 
