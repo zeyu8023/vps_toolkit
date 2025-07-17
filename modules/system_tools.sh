@@ -1,4 +1,4 @@
-# Version: 2.3.2
+# Version: 2.3.3
 #!/bin/bash
 echo "✅ 已加载 system_tools.sh"
 # 模块：系统工具中心
@@ -20,6 +20,35 @@ ensure_command() {
     read -p "📥 是否安装 $pkg？(y/n): " confirm
     [[ "$confirm" == "y" ]] && sudo apt update && sudo apt install "$pkg" -y
   fi
+}
+
+clean_system() {
+  echo -e "\n🧹 系统垃圾清理工具"
+  echo "────────────────────────────────────────────"
+  echo "📊 清理前磁盘使用情况："
+  df -h /
+
+  echo -e "\n🧼 正在清理系统缓存与日志..."
+  sudo apt autoremove -y
+  sudo apt clean
+  sudo journalctl --vacuum-time=7d
+  sudo find /var/log -type f -name "*.log" -delete
+  sudo find /tmp -type f -mtime +3 -delete
+
+  echo -e "\n🐳 Docker 清理提示："
+  read -p "是否清理未使用的 Docker 镜像和容器？(y/n): " confirm
+  if [[ "$confirm" == "y" ]]; then
+    docker system prune -f
+    echo "✅ Docker 清理完成"
+    log "清理 Docker 镜像与容器"
+  else
+    echo "❌ 已跳过 Docker 清理"
+  fi
+
+  echo -e "\n📊 清理后磁盘使用情况："
+  df -h /
+  echo "✅ 系统垃圾清理完成"
+  log "执行系统垃圾清理"
 }
 
 system_tools() {
@@ -85,30 +114,20 @@ system_tools() {
         log "查看公网 IP 与地理位置"
         ;;
       5)
-        ensure_command docker docker.io
-        echo -e "\n🧹 正在清理系统垃圾..."
-        sudo apt autoremove -y && sudo apt clean
-        sudo rm -rf /var/log/*.log /tmp/*
-        docker system prune -a -f
-        echo "✅ 清理完成"
-        log "清理系统垃圾完成"
+        clean_system
         ;;
       6)
         echo -e "\n💽 磁盘占用排行（按目录）"
-        echo         "────────────────────────────────────────────"
-
-  # 排除虚拟目录，避免 du 报错
+        echo "────────────────────────────────────────────"
         exclude_dirs=(/proc /sys /run /dev /tmp /var/lib/docker)
         exclude_args=()
         for d in "${exclude_dirs[@]}"; do
           exclude_args+=(--exclude="$d")
         done
 
-  # 根目录占用排行
         echo "📁 根目录占用排行："
         sudo du -h --max-depth=1 / "${exclude_args[@]}" 2>/dev/null | sort -hr | head -n 10
 
-  # 展示每个目录下占用最高的子目录
         echo -e "\n📂 每个目录下占用最多的子目录："
         for dir in /home /var /usr /opt; do
           [[ -d "$dir" ]] || continue
@@ -117,7 +136,7 @@ system_tools() {
         done
 
         log "查看磁盘占用排行与子目录分析"
-  ;;
+        ;;
       7)
         ensure_command netstat net-tools
         echo -e "\n🌐 网络连接数（按 IP）"
