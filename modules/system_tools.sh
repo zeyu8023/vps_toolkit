@@ -1,4 +1,4 @@
-# Version: 2.3.1
+# Version: 2.3.2
 #!/bin/bash
 echo "✅ 已加载 system_tools.sh"
 # 模块：系统工具中心
@@ -95,9 +95,29 @@ system_tools() {
         ;;
       6)
         echo -e "\n💽 磁盘占用排行（按目录）"
-        sudo du -h --max-depth=1 / | sort -hr | head -n 10
-        log "查看磁盘占用排行"
-        ;;
+        echo         "────────────────────────────────────────────"
+
+  # 排除虚拟目录，避免 du 报错
+        exclude_dirs=(/proc /sys /run /dev /tmp /var/lib/docker)
+        exclude_args=()
+        for d in "${exclude_dirs[@]}"; do
+          exclude_args+=(--exclude="$d")
+        done
+
+  # 根目录占用排行
+        echo "📁 根目录占用排行："
+        sudo du -h --max-depth=1 / "${exclude_args[@]}" 2>/dev/null | sort -hr | head -n 10
+
+  # 展示每个目录下占用最高的子目录
+        echo -e "\n📂 每个目录下占用最多的子目录："
+        for dir in /home /var /usr /opt; do
+          [[ -d "$dir" ]] || continue
+          echo -e "\n📁 $dir 下占用最多的子目录："
+          sudo du -h --max-depth=1 "$dir" 2>/dev/null | sort -hr | head -n 3
+        done
+
+        log "查看磁盘占用排行与子目录分析"
+  ;;
       7)
         ensure_command netstat net-tools
         echo -e "\n🌐 网络连接数（按 IP）"
