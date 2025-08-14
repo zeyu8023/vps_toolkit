@@ -252,10 +252,8 @@ docker_container_menu() {
             echo "✅ 已通过 docker-compose 更新容器 [$name]"
             log "更新容器（compose）：$name 使用镜像 $image"
 
-          else
-            echo "❌ 未找到 docker-compose.yml，请检查路径：$compose_dir"
-          fi
-        else
+            else
+          
           echo "🔍 正在提取原容器配置..."
           envs=$(docker inspect "$cid" --format '{{range .Config.Env}}-e {{.}} {{end}}' 2>/dev/null)
           vols=$(docker inspect "$cid" --format '{{range .HostConfig.Binds}}-v {{.}} {{end}}' 2>/dev/null)
