@@ -1,4 +1,4 @@
-# Version: 2.3.3
+# Version: 2.3.4
 #!/bin/bash
 echo "✅ 已加载 docker_tools.sh"
 # 模块：Docker 管理中心
@@ -236,13 +236,22 @@ docker_container_menu() {
           compose_dir=$(docker inspect "$cid" --format '{{ index .Config.Labels "com.docker.compose.project.working_dir" }}' 2>/dev/null)
           [[ -z "$compose_dir" ]] && compose_dir="/opt/compose/$compose_project"
 
-          if [[ -f "$compose_dir/docker-compose.yml" ]]; then
+            if [[ -f "$compose_dir/docker-compose.yml" ]]; then
+              yml_file="docker-compose.yml"
+            elif [[ -f "$compose_dir/docker-compose.yaml" ]]; then
+              yml_file="docker-compose.yaml"
+            else
+              echo "❌ 未找到 docker-compose.yml 或 .yaml，请检查路径：$compose_dir"
+              return
+            fi
+
             echo "📁 切换到 compose 目录：$compose_dir"
             cd "$compose_dir"
-            docker-compose pull
-            docker-compose up -d
+            docker-compose -f "$yml_file" pull
+            docker-compose -f "$yml_file" up -d
             echo "✅ 已通过 docker-compose 更新容器 [$name]"
             log "更新容器（compose）：$name 使用镜像 $image"
+
           else
             echo "❌ 未找到 docker-compose.yml，请检查路径：$compose_dir"
           fi
